@@ -1,48 +1,110 @@
 import 'package:flutter/material.dart';
 import '../../../autenticacion/presentacion/paginas/pagina_login.dart';
+import '../../../autenticacion/dominio/entidades/respuesta_autenticacion.dart';
+import '../widgets/header_notificaciones.dart';
 
 /// Pantalla principal de la aplicación
 /// Se muestra después de un login exitoso
 class PaginaInicio extends StatelessWidget {
+  /// Datos de autenticación del usuario
+  /// En una implementación real, esto vendría de un provider o servicio
+  static RespuestaAutenticacion? _respuestaAutenticacion;
+  
   const PaginaInicio({super.key});
+
+  /// Método estático para establecer los datos de autenticación
+  /// Esto se llamaría desde el login exitoso
+  static void establecerDatosAutenticacion(RespuestaAutenticacion respuesta) {
+    _respuestaAutenticacion = respuesta;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF667eea),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'InnPulse360 Movil',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              /// Navegar de vuelta al login
-              /// Se usa pushReplacement para limpiar el historial
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PaginaLogin(),
+      body: Column(
+        children: [
+          /// Header con notificaciones
+          if (_respuestaAutenticacion != null)
+            HeaderNotificaciones(
+              respuestaAutenticacion: _respuestaAutenticacion!,
+              onLogout: () {
+                _respuestaAutenticacion = null;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PaginaLogin(),
+                  ),
+                );
+              },
+              onCambiarPassword: () {
+                /// TODO: Implementar navegación a cambio de contraseña
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Funcionalidad de cambio de contraseña pendiente'),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              },
+            )
+          else
+            /// Header básico si no hay datos de autenticación
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF667eea),
+                    const Color(0xFF667eea).withOpacity(0.8),
+                  ],
                 ),
-              );
-            },
-            tooltip: 'Cerrar sesión',
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'InnPulse360 Movil',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout),
+                        color: Colors.white,
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PaginaLogin(),
+                            ),
+                          );
+                        },
+                        tooltip: 'Cerrar sesión',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          /// Contenido principal
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
             /// Icono de bienvenida
             Container(
               width: 120,
@@ -126,8 +188,11 @@ class PaginaInicio extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

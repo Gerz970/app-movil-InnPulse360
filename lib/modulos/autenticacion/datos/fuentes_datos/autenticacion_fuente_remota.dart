@@ -47,6 +47,12 @@ class AutenticacionFuenteRemotaImpl implements AutenticacionFuenteRemota {
       
       // Verificar que la respuesta sea exitosa (200-299)
       if (response.statusCode! >= 200 && response.statusCode! < 300) {
+        // Debug: Imprimir la respuesta del servidor
+        print('=== RESPUESTA DEL SERVIDOR ===');
+        print('Status Code: ${response.statusCode}');
+        print('Response Data: ${response.data}');
+        print('===============================');
+        
         // Convertir respuesta JSON a modelo
         return RespuestaLoginModelo.desdeJson(
           response.data as Map<String, dynamic>,

@@ -20,32 +20,37 @@ class LoginNotificador extends Notifier<LoginEstado> {
     required String login,
     required String password,
   }) async {
-    /// Obtener el caso de uso desde el ref
-    final iniciarSesionCasoUso = ref.read(iniciarSesionCasoUsoProvider);
-    
-    /// Cambiar estado a cargando
-    state = const LoginCargando();
-    
-    /// Crear parámetros para el caso de uso
-    final parametros = ParametrosIniciarSesion(
-      login: login,
-      password: password,
-    );
-    
-    /// Ejecutar caso de uso
-    final resultado = await iniciarSesionCasoUso.ejecutar(parametros);
-    
-    /// Procesar resultado
-    resultado.when(
-      exito: (respuesta) {
-        /// Login exitoso
-        state = LoginExitoso(respuesta);
-      },
-      error: (falla) {
-        /// Login fallido
-        state = LoginError(falla.mensaje);
-      },
-    );
+    try {
+      /// Obtener el caso de uso desde el ref
+      final iniciarSesionCasoUso = ref.read(iniciarSesionCasoUsoProvider);
+      
+      /// Cambiar estado a cargando
+      state = const LoginCargando();
+      
+      /// Crear parámetros para el caso de uso
+      final parametros = ParametrosIniciarSesion(
+        login: login,
+        password: password,
+      );
+      
+      /// Ejecutar caso de uso
+      final resultado = await iniciarSesionCasoUso.ejecutar(parametros);
+      
+      /// Procesar resultado
+      resultado.when(
+        exito: (respuesta) {
+          /// Login exitoso
+          state = LoginExitoso(respuesta);
+        },
+        error: (falla) {
+          /// Login fallido
+          state = LoginError(falla.mensaje);
+        },
+      );
+    } catch (e) {
+      /// Error inesperado durante el proceso de login
+      state = LoginError('Error inesperado: ${e.toString()}');
+    }
   }
   
   /// Resetear el estado a inicial
