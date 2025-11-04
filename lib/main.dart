@@ -1,21 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'aplicacion/inyeccion_dependencias/localizador_servicios.dart';
-import 'modulos/autenticacion/presentacion/paginas/pagina_login.dart';
+import 'features/login/login_screen.dart';
 
-void main() async {
-  /// Asegurar que Flutter esté inicializado
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  /// Inicializar todas las dependencias
-  await inicializarDependencias();
-  
-  runApp(
-    /// ProviderScope es necesario para usar Riverpod
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+void main() {
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -29,7 +16,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF667eea)),
         useMaterial3: true,
       ),
-      home: const PaginaLogin(),
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
