@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart'; //Es para uso de componentes visuales
 import 'package:provider/provider.dart'; // es para escuchar cambios y actualizar UI
 import '../../../core/auth/controllers/auth_controller.dart'; //controller de esta interfaz
+import '../home/home_screen.dart'; // pantalla de inicio
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +39,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 _buildHeader(),
                 const SizedBox(height: 64),
                 _buildLoginForm(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
+                _buildErrorMessage(),
+                const SizedBox(height: 16),
                 _buildLoginButton(),
                 const SizedBox(height: 24),
                 _buildRegisterOption(),
@@ -248,29 +251,43 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF667eea),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        return SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: authController.isLoading ? null : _handleLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF667eea),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              disabledBackgroundColor: const Color(0xFF9ca3af),
+            ),
+            child: authController.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    'Iniciar Sesión',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
           ),
-        ),
-        child: const Text(
-          'Iniciar Sesión',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -305,11 +322,46 @@ class _LoginScreenState extends State<LoginScreen> {
       ],
     );
   }
+
+  Widget _buildErrorMessage() {
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        if (authController.errorMessage != null && authController.errorMessage!.isNotEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    authController.errorMessage!,
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
   
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final login = _loginController.text.trim();
     final password = _passwordController.text.trim();
     
+    // Validación de campos vacíos
     if (login.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -319,14 +371,32 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
+
+    // Obtener el AuthController del Provider
+    final authController = Provider.of<AuthController>(context, listen: false);
     
-    // Simular login exitoso
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Bienvenido $login'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    // Realizar petición de login al API
+    final success = await authController.login(login, password);
+    
+    if (success) {
+      // Login exitoso - navegar a HomeScreen
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Bienvenido $login'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      // El error ya está manejado en el AuthController y se mostrará en _buildErrorMessage
+      // No necesitamos hacer nada más aquí
+    }
   }
 
   void _navigateToRegister() {

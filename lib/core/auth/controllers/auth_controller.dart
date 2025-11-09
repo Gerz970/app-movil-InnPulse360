@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart'; // Para uso de ChangeNotifier
 import '../services/auth_service.dart'; // para conexion con servicio
+import '../services/session_storage.dart'; // para almacenamiento de sesión
 import '../models/request_login_model.dart'; // modelo de body para request
 import 'package:dio/dio.dart'; // clase dio para construir objeto de http
 
@@ -13,6 +14,11 @@ class AuthController extends ChangeNotifier
   bool _isLoading = false;           // Estado de carga
   String? _errorMessage;             // Mensaje de error (puede ser null)
   Map<String, dynamic>? _loginResponse;  // Respuesta del login (temporal)
+
+  // Constructor que carga la sesión al inicializar
+  AuthController() {
+    loadSession();
+  }
 
   // Getters
   bool get isLoading {
@@ -38,10 +44,17 @@ class AuthController extends ChangeNotifier
       final response = await _authService.login(requestModel);
       // 4.- Guardar respuesta temporalmente
       _loginResponse = response.data;
-      // 5.- desactivar loading y notificar estado
+      
+      // 5.- Guardar sesión en caché
+      if (response.data != null) {
+        await SessionStorage.saveSession(response.data);
+        print("Sesión guardada en caché");
+      }
+      
+      // 6.- desactivar loading y notificar estado
       _isLoading = false;
       notifyListeners();
-      //6.- imprimir en consola la respuesta
+      //7.- imprimir en consola la respuesta
       print("Login correctamente ejecutado");
       print('Status code: ${response.statusCode}');
       print(response.data);
@@ -76,6 +89,33 @@ class AuthController extends ChangeNotifier
       return false;
     }
   }
-  
 
+  /// Cargar la sesión guardada del almacenamiento
+  /// Se llama automáticamente al inicializar el controlador
+  Future<void> loadSession() async {
+    try {
+      final session = await SessionStorage.getSession();
+      if (session != null) {
+        _loginResponse = session;
+        notifyListeners();
+        print("Sesión cargada desde caché");
+      }
+    } catch (e) {
+      print('Error al cargar sesión: $e');
+    }
+  }
+
+  /// Cerrar sesión y limpiar datos
+  /// Limpia la sesión guardada y los datos del controlador
+  Future<void> logout() async {
+    try {
+      await SessionStorage.clearSession();
+      _loginResponse = null;
+      _errorMessage = null;
+      notifyListeners();
+      print("Sesión cerrada y limpiada");
+    } catch (e) {
+      print('Error al cerrar sesión: $e');
+    }
+  }
 }

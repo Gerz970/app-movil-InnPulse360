@@ -2,20 +2,18 @@ import 'package:flutter/material.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
 
-/// Clase HomeScreen, se encarga de la pantalla de inicio de la aplicación
-class HomeScreen extends StatefulWidget {
-  /// Constructor de la clase HomeScreen
-  const HomeScreen({super.key}); // super.key es el constructor de la clase padre
+/// Pantalla genérica para módulos en construcción
+/// Muestra un mensaje "En construcción" con un ícono informativo
+class UnderConstructionScreen extends StatelessWidget {
+  /// Título del módulo que se mostrará en la pantalla
+  final String title;
 
-  @override
-  /// Metodo para crear el estado de la clase HomeScreen
-  State<HomeScreen> createState() => _HomeScreenState();
-  /// cuando () significa que el metodo no recibe parametros
-  /// cuando {} significa que el metodo recibe parametros
-  /// cuando @override significa que el metodo es un override de la clase padre
-}
+  /// Constructor de la pantalla
+  const UnderConstructionScreen({
+    super.key,
+    required this.title,
+  });
 
-class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,20 +30,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Ícono grande centrado
+                    // Ícono de construcción
                     Icon(
-                      Icons.construction_outlined,
+                      Icons.construction,
                       size: 80,
                       color: const Color(0xFF667eea).withOpacity(0.3),
                     ),
                     const SizedBox(height: 24),
-                    // Texto "En proceso..."
-                    Text(
-                      'En proceso...',
+                    // Texto "En construcción"
+                    const Text(
+                      'En construcción',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF6b7280),
+                        color: Color(0xFF6b7280),
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -59,3 +57,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
