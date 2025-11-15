@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
 import '../features/hoteles/hotels_list_screen.dart';
 import '../features/clientes/clientes_list_screen.dart';
+import '../features/incidencias/incidencias_list_screen.dart';
 import '../features/common/under_construction_screen.dart';
 
 /// Widget de sidebar lateral reutilizable para toda la aplicación
@@ -125,9 +126,7 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Incidencias',
-                              ),
+                              builder: (context) => const IncidenciasListScreen(),
                             ),
                           );
                         },

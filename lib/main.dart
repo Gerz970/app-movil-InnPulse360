@@ -5,6 +5,7 @@ import 'core/auth/controllers/auth_controller.dart';
 import 'core/sidebar/sidebar_controller.dart';
 import 'features/hoteles/controllers/hotel_controller.dart';
 import 'features/clientes/controllers/cliente_controller.dart';
+import 'features/incidencias/controllers/incidencia_controller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,6 +22,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SidebarController()),
         ChangeNotifierProvider(create: (_) => HotelController()),
         ChangeNotifierProvider(create: (_) => ClienteController()),
+        ChangeNotifierProvider(create: (_) => IncidenciaController()),
       ],
       child: MaterialApp(
         title: 'InnPulse App',
