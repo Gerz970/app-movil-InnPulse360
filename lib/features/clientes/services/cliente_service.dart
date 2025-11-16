@@ -126,8 +126,8 @@ class ClienteService {
   /// Usado durante el proceso de registro
   /// Parámetro: Map con los datos del cliente
   Future<Response> createClientePublico(Map<String, dynamic> clienteData) async {
-    // Construir la URL
-    final url = baseUrl + EndpointsClientes.list;
+    // Construir la URL usando el endpoint público
+    final url = baseUrl + EndpointsClientes.createPublico;
 
     // Configurar headers sin autenticación
     final headers = {
@@ -477,18 +477,21 @@ class ClienteService {
   /// NO requiere token de autenticación
   /// Parámetros opcionales: skip y limit para paginación, idPais para filtrar por país
   Future<Response> fetchEstadosPublicos({int skip = 0, int limit = 100, int? idPais}) async {
-    // Construir la URL con query parameters
-    final url = baseUrl + EndpointsHotels.estados;
+    // Construir la URL según si se proporciona idPais
+    final String url;
+    final Map<String, dynamic> queryParams;
 
-    // Construir query parameters
-    final queryParams = <String, dynamic>{
-      'skip': skip,
-      'limit': limit,
-    };
-
-    // Agregar idPais si se proporciona
     if (idPais != null) {
-      queryParams['id_pais'] = idPais;
+      // Usar endpoint específico para estados por país
+      url = baseUrl + "estados/pais/$idPais";
+      queryParams = {}; // Este endpoint no acepta query parameters
+    } else {
+      // Usar endpoint general de estados con paginación
+      url = baseUrl + EndpointsHotels.estados;
+      queryParams = {
+        'skip': skip,
+        'limit': limit,
+      };
     }
 
     // Configurar headers sin autenticación
@@ -501,7 +504,7 @@ class ClienteService {
     try {
       final response = await _dio.get(
         url,
-        queryParameters: queryParams,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
         options: Options(headers: headers),
       );
 

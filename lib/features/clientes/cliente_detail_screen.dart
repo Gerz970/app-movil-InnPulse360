@@ -99,7 +99,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     _correoController.text = cliente.correoElectronico ?? '';
     _telefonoController.text = cliente.telefono ?? '';
     _direccionController.text = cliente.direccion ?? '';
-    _documentoController.text = cliente.documentoIdentificacion?.toString() ?? '';
+    _documentoController.text = cliente.documentoIdentificacion ?? '';
     _representanteController.text = cliente.representante ?? '';
     _idEstatus = cliente.idEstatus;
     _tipoPersona = cliente.tipoPersona;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import '../../core/auth/controllers/auth_controller.dart';
@@ -108,15 +109,45 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
     }
   }
 
-  /// Cargar estados por país
-  Future<void> _loadEstadosByPais(int idPais) async {
+  /// Verificar si un país es México
+  bool _esMexico(Pais? pais) {
+    if (pais == null) return false;
+    // Comparar sin importar mayúsculas/minúsculas y con/sin acento
+    final nombreNormalizado = pais.nombre.toLowerCase().trim();
+    // Normalizar acentos: méxico -> mexico
+    final nombreSinAcentos = nombreNormalizado
+        .replaceAll('é', 'e')
+        .replaceAll('É', 'e')
+        .replaceAll('ó', 'o')
+        .replaceAll('Ó', 'o');
+    
+    return nombreNormalizado == 'méxico' || 
+           nombreNormalizado == 'mexico' ||
+           nombreSinAcentos == 'mexico';
+  }
+
+  /// Cargar estados por país (solo si el país es México)
+  Future<void> _loadEstadosByPais(int idPais, Pais? pais) async {
+    // Solo cargar estados si el país es México
+    if (!_esMexico(pais)) {
+      setState(() {
+        _estados = [];
+        _estadoSeleccionado = null;
+      });
+      return;
+    }
+
+    // Cuando es México, usar ID = 2 (hardcodeado según requerimiento)
+    const int idMexico = 2;
+    
     setState(() {
       _estados = [];
       _estadoSeleccionado = null;
     });
 
     try {
-      final estadosResponse = await _clienteService.fetchEstadosPublicos(idPais: idPais);
+      final estadosResponse = await _clienteService.fetchEstadosPublicos(idPais: idMexico);
+      
       if (estadosResponse.data != null && estadosResponse.data is List) {
         _estados = (estadosResponse.data as List)
             .map((json) => Estado.fromJson(json as Map<String, dynamic>))
@@ -124,7 +155,7 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
       }
       setState(() {});
     } catch (e) {
-      print('Error al cargar estados: $e');
+      // Error silencioso - los estados simplemente no se cargarán
     }
   }
 
@@ -217,8 +248,12 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                     if (value == null || value.isEmpty || value.trim().isEmpty) {
                       return _tipoPersona == 1 ? 'El nombre es requerido' : 'La razón social es requerida';
                     }
-                    if (value.trim().length < 3) {
-                      return 'Debe tener al menos 3 caracteres';
+                    final trimmed = value.trim();
+                    if (trimmed.length < 1) {
+                      return 'Debe tener al menos 1 carácter';
+                    }
+                    if (trimmed.length > 250) {
+                      return 'No puede tener más de 250 caracteres';
                     }
                     return null;
                   },
@@ -234,8 +269,9 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                       if (value == null || value.isEmpty || value.trim().isEmpty) {
                         return 'El apellido paterno es requerido';
                       }
-                      if (value.trim().length < 3) {
-                        return 'Debe tener al menos 3 caracteres';
+                      final trimmed = value.trim();
+                      if (trimmed.length > 250) {
+                        return 'No puede tener más de 250 caracteres';
                       }
                       return null;
                     },
@@ -246,6 +282,15 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                     label: 'Apellido materno',
                     hint: 'Ingresa el apellido materno',
                     icon: Icons.person_outline,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final trimmed = value.trim();
+                        if (trimmed.length > 250) {
+                          return 'No puede tener más de 250 caracteres';
+                        }
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                   _buildTextField(
@@ -253,10 +298,17 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                     label: 'CURP',
                     hint: 'Ingresa el CURP (18 caracteres)',
                     icon: Icons.credit_card,
+                    maxLength: 18,
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
-                        if (value.length != 18) {
+                        final curp = value.trim().toUpperCase();
+                        if (curp.length != 18) {
                           return 'El CURP debe tener exactamente 18 caracteres';
+                        }
+                        // Validar formato CURP: ^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$
+                        final curpRegex = RegExp(r'^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$');
+                        if (!curpRegex.hasMatch(curp)) {
+                          return 'Formato de CURP inválido. Ejemplo: ABCD123456HMABCD1';
                         }
                       }
                       return null;
@@ -270,9 +322,17 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                     label: 'Representante',
                     hint: 'Ingresa el nombre del representante',
                     icon: Icons.account_circle,
+                    maxLength: 100,
                     validator: (value) {
                       if (value == null || value.isEmpty || value.trim().isEmpty) {
                         return 'El representante es requerido';
+                      }
+                      final trimmed = value.trim();
+                      if (trimmed.length < 1) {
+                        return 'Debe tener al menos 1 carácter';
+                      }
+                      if (trimmed.length > 100) {
+                        return 'No puede tener más de 100 caracteres';
                       }
                       return null;
                     },
@@ -284,11 +344,17 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                   label: 'RFC',
                   hint: 'Ingresa el RFC (12-13 caracteres)',
                   icon: Icons.assignment_ind,
+                  maxLength: 13,
                   validator: (value) {
                     if (value != null && value.isNotEmpty) {
-                      final rfc = value.trim();
+                      final rfc = value.trim().toUpperCase();
                       if (rfc.length < 12 || rfc.length > 13) {
                         return 'El RFC debe tener 12 o 13 caracteres';
+                      }
+                      // Validar formato RFC: ^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$
+                      final rfcRegex = RegExp(r'^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$');
+                      if (!rfcRegex.hasMatch(rfc)) {
+                        return 'Formato de RFC inválido. Ejemplo: ABC123456XYZ';
                       }
                     }
                     return null;
@@ -316,9 +382,26 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                 _buildTextField(
                   controller: _telefonoController,
                   label: 'Teléfono',
-                  hint: 'Ingresa el teléfono',
+                  hint: 'Ingresa el teléfono (10 dígitos)',
                   icon: Icons.phone,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final telefono = value.trim();
+                      if (telefono.length != 10) {
+                        return 'El teléfono debe tener exactamente 10 dígitos';
+                      }
+                      // Validar que solo contenga dígitos
+                      if (!RegExp(r'^\d+$').hasMatch(telefono)) {
+                        return 'El teléfono debe contener solo dígitos';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
@@ -327,17 +410,16 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                   hint: 'Ingresa el número de documento',
                   icon: Icons.badge,
                   keyboardType: TextInputType.number,
+                  maxLength: 50,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: (value) {
                     if (value == null || value.isEmpty || value.trim().isEmpty) {
                       return 'El documento de identificación es requerido';
                     }
-                    try {
-                      final doc = int.parse(value.trim());
-                      if (doc <= 0) {
-                        return 'El documento debe ser mayor a 0';
-                      }
-                    } catch (e) {
-                      return 'El documento debe ser un número válido';
+                    if (value.trim().length > 50) {
+                      return 'El documento no puede exceder 50 caracteres';
                     }
                     return null;
                   },
@@ -349,6 +431,15 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
                   hint: 'Ingresa la dirección completa',
                   icon: Icons.location_on,
                   maxLines: 2,
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final trimmed = value.trim();
+                      if (trimmed.length > 100) {
+                        return 'La dirección no puede tener más de 100 caracteres';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
                 _buildPaisDropdown(),
@@ -475,11 +566,15 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
     String? Function(String?)? validator,
     int maxLines = 1,
     bool enabled = true,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
       validator: validator,
       enabled: enabled,
       decoration: InputDecoration(
@@ -525,6 +620,8 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
           color: Color(0xFF9ca3af),
           fontSize: 14,
         ),
+        // Ocultar contador de caracteres si maxLength está definido
+        counterText: maxLength != null ? '' : null,
       ),
     );
   }
@@ -650,7 +747,12 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
           _paisSeleccionado = pais;
           _estadoSeleccionado = null;
           if (pais != null) {
-            _loadEstadosByPais(pais.idPais);
+            // Solo cargar estados si el país es México
+            _loadEstadosByPais(pais.idPais, pais);
+          } else {
+            // Limpiar estados si no hay país seleccionado
+            _estados = [];
+            _estadoSeleccionado = null;
           }
         });
       },
@@ -665,10 +767,14 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
 
   /// Widget para dropdown de estados
   Widget _buildEstadoDropdown() {
+    // Solo mostrar/habilitar el dropdown si el país seleccionado es México
+    final esMexico = _esMexico(_paisSeleccionado);
+    
     return DropdownButtonFormField<Estado>(
       value: _estadoSeleccionado,
       decoration: InputDecoration(
-        labelText: 'Estado *',
+        labelText: 'Estado',
+        hintText: esMexico ? 'Selecciona un estado' : 'Solo disponible para México',
         prefixIcon: const Icon(
           Icons.map,
           color: Color(0xFF6b7280),
@@ -692,13 +798,17 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
           ),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: esMexico ? Colors.white : Colors.grey.shade100,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
+        labelStyle: TextStyle(
+          color: esMexico ? const Color(0xFF6b7280) : Colors.grey.shade400,
+          fontSize: 14,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
           fontSize: 14,
         ),
       ),
@@ -708,15 +818,15 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
           child: Text(estado.nombre),
         );
       }).toList(),
-      onChanged: (Estado? estado) {
-        setState(() {
-          _estadoSeleccionado = estado;
-        });
-      },
+      onChanged: esMexico && _estados.isNotEmpty
+          ? (Estado? estado) {
+              setState(() {
+                _estadoSeleccionado = estado;
+              });
+            }
+          : null,
       validator: (value) {
-        if (value == null) {
-          return 'El estado es requerido';
-        }
+        // Estado es opcional, no requiere validación
         return null;
       },
     );
@@ -729,10 +839,10 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
       return;
     }
 
-    // Validar país y estado
-    if (_paisSeleccionado == null || _estadoSeleccionado == null) {
+    // Validar país (estado es opcional)
+    if (_paisSeleccionado == null) {
       setState(() {
-        _errorMessage = 'Por favor selecciona país y estado';
+        _errorMessage = 'Por favor selecciona un país';
       });
       return;
     }
@@ -749,10 +859,9 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
         'rfc': _rfcController.text.trim().toUpperCase(),
         'id_estatus': _idEstatus,
         'tipo_persona': _tipoPersona,
-        'documento_identificacion': int.parse(_documentoController.text.trim()),
+        'documento_identificacion': _documentoController.text.trim(),
         'correo_electronico': _correoController.text.trim(),
         'pais_id': _paisSeleccionado!.idPais,
-        'estado_id': _estadoSeleccionado!.idEstado,
         'representante': _tipoPersona == 2
             ? _representanteController.text.trim()
             : _nombreRazonSocialController.text.trim(), // Para persona física usar nombre
@@ -782,6 +891,11 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
       final direccion = _direccionController.text.trim();
       if (direccion.isNotEmpty) {
         clienteData['direccion'] = direccion;
+      }
+
+      // Agregar estado_id solo si está seleccionado (opcional)
+      if (_estadoSeleccionado != null) {
+        clienteData['estado_id'] = _estadoSeleccionado!.idEstado;
       }
 
       // Crear cliente usando método público (sin autenticación)

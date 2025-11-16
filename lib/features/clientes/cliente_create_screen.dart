@@ -788,11 +788,7 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
 
     final documento = _documentoController.text.trim();
     if (documento.isNotEmpty) {
-      try {
-        clienteData['documento_identificacion'] = int.parse(documento);
-      } catch (e) {
-        // Si no se puede parsear, no agregar
-      }
+      clienteData['documento_identificacion'] = documento;
     }
 
     if (_paisSeleccionado != null) {
