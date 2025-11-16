@@ -7,4 +7,10 @@ class EndpointsAuth {
 
   //[POST]: login
   static const String login = "usuarios/login";
+  
+  //[POST]: verificar disponibilidad de login y correo para registro
+  static const String verificarDisponibilidad = "usuarios/verificar-disponibilidad";
+  
+  //[POST]: registro de usuario-cliente
+  static const String registroCliente = "usuarios/registro-cliente";
 }

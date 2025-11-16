@@ -2,6 +2,7 @@ import 'package:flutter/material.dart'; //Es para uso de componentes visuales
 import 'package:provider/provider.dart'; // es para escuchar cambios y actualizar UI
 import '../../../core/auth/controllers/auth_controller.dart'; //controller de esta interfaz
 import '../home/home_screen.dart'; // pantalla de inicio
+import 'register_screen.dart'; // pantalla de registro
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -400,11 +401,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToRegister() {
-    // Esta funcionalidad tiene como objetivo navegar a la pantalla de registro de usuario
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Función de registro no implementada'),
-        backgroundColor: Colors.orange,
+    // Navegar a la pantalla de registro de usuario
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const RegisterScreen(),
       ),
     );
   }
