@@ -112,174 +112,143 @@ class AppSidebar extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Lista de módulos
+                // Lista de módulos - construida dinámicamente desde el backend
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    children: [
-                      // 1. Incidencias
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.report,
-                        title: 'Incidencias',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const IncidenciasListScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 2. Usuarios
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.group,
-                        title: 'Usuarios',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Usuarios',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 3. Clientes
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.person_outline,
-                        title: 'Clientes',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ClientesListScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 4. Hoteles
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.hotel,
-                        title: 'Hoteles',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HotelsListScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 5. Pisos
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.layers,
-                        title: 'Pisos',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Pisos',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 6. Habitaciones
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.meeting_room,
-                        title: 'Habitaciones',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Habitaciones',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 7. Reservaciones
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.event_available,
-                        title: 'Reservaciones',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Reservaciones',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 8. Mantenimiento
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.build,
-                        title: 'Mantenimiento',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Mantenimiento',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      // 9. Limpieza
-                      _buildModuleItem(
-                        context: context,
-                        icon: Icons.cleaning_services,
-                        title: 'Limpieza',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Limpieza',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                  child: _buildModulesList(context, loginResponse),
                 ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  /// Construir lista de módulos dinámicamente desde el backend
+  Widget _buildModulesList(BuildContext context, Map<String, dynamic>? loginResponse) {
+    // Obtener módulos del loginResponse
+    List<dynamic> modulos = [];
+    if (loginResponse != null && loginResponse['modulos'] is List) {
+      modulos = loginResponse['modulos'] as List;
+    }
+
+    // Obtener roles del usuario
+    List<dynamic> roles = [];
+    if (loginResponse != null && loginResponse['roles'] is List) {
+      roles = loginResponse['roles'] as List;
+    }
+
+    // Filtrar módulos si el usuario tiene rol "Cliente"
+    bool tieneRolCliente = false;
+    for (var rol in roles) {
+      if (rol is Map<String, dynamic>) {
+        final nombreRol = rol['rol'] as String? ?? '';
+        if (nombreRol.toLowerCase() == 'cliente') {
+          tieneRolCliente = true;
+          break;
+        }
+      }
+    }
+
+    // Si tiene rol Cliente, solo mostrar módulo "Reservaciones"
+    if (tieneRolCliente) {
+      modulos = modulos.where((modulo) {
+        if (modulo is Map<String, dynamic>) {
+          final nombreModulo = modulo['nombre'] as String? ?? '';
+          return nombreModulo.toLowerCase().contains('reservacion');
+        }
+        return false;
+      }).toList();
+    }
+
+    // Si no hay módulos, mostrar mensaje
+    if (modulos.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text(
+            'No hay módulos disponibles',
+            style: TextStyle(
+              color: Color(0xFF6b7280),
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Construir lista de widgets de módulos
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: modulos.map<Widget>((modulo) {
+        final moduloMap = modulo as Map<String, dynamic>;
+        final nombreModulo = moduloMap['nombre'] as String? ?? '';
+        
+        return Column(
+          children: [
+            _buildModuleItem(
+              context: context,
+              icon: _getIconForModule(nombreModulo),
+              title: nombreModulo,
+              onTap: () => _navigateToModuleScreen(context, nombreModulo),
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  /// Obtener icono para un módulo basándose en su nombre
+  IconData _getIconForModule(String nombreModulo) {
+    final nombreLower = nombreModulo.toLowerCase();
+    
+    if (nombreLower.contains('incidencia')) {
+      return Icons.report;
+    } else if (nombreLower.contains('usuario')) {
+      return Icons.group;
+    } else if (nombreLower.contains('cliente')) {
+      return Icons.person_outline;
+    } else if (nombreLower.contains('hotel')) {
+      return Icons.hotel;
+    } else if (nombreLower.contains('piso')) {
+      return Icons.layers;
+    } else if (nombreLower.contains('habitacion')) {
+      return Icons.meeting_room;
+    } else if (nombreLower.contains('reservacion')) {
+      return Icons.event_available;
+    } else if (nombreLower.contains('mantenimiento')) {
+      return Icons.build;
+    } else if (nombreLower.contains('limpieza')) {
+      return Icons.cleaning_services;
+    } else {
+      return Icons.dashboard; // Icono por defecto
+    }
+  }
+
+  /// Navegar a la pantalla correspondiente según el nombre del módulo
+  void _navigateToModuleScreen(BuildContext context, String nombreModulo) {
+    Navigator.pop(context);
+    
+    final nombreLower = nombreModulo.toLowerCase();
+    Widget screen;
+    
+    if (nombreLower.contains('incidencia')) {
+      screen = const IncidenciasListScreen();
+    } else if (nombreLower.contains('cliente')) {
+      screen = const ClientesListScreen();
+    } else if (nombreLower.contains('hotel')) {
+      screen = const HotelsListScreen();
+    } else if (nombreLower.contains('reservacion')) {
+      screen = const UnderConstructionScreen(title: 'Reservaciones');
+    } else {
+      // Para otros módulos, mostrar pantalla de construcción
+      screen = UnderConstructionScreen(title: nombreModulo);
+    }
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
     );
   }
 
