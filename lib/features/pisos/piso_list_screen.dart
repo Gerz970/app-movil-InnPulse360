@@ -32,7 +32,7 @@ class _PisosListScreenState extends State<PisosListScreen> {
       drawer: const AppSidebar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const PisoCreateScreen()));
         },
         backgroundColor: const Color(0xFF667eea),
         foregroundColor: Colors.white,
@@ -192,6 +192,14 @@ class _PisosListScreenState extends State<PisosListScreen> {
                     Text(
                       "Nivel: ${piso.nivel}",
                       style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6b7280),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${piso.descripcion}",
+                        style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6b7280),
                       ),
