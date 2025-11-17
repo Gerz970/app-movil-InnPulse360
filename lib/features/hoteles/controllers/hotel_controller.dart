@@ -3,6 +3,8 @@ import '../services/hotel_service.dart'; // para conexion con servicio
 import '../models/hotel_model.dart'; // modelo de Hotel
 import '../models/pais_model.dart'; // modelo de País
 import '../models/estado_model.dart'; // modelo de Estado
+import '../models/galeria_image_model.dart'; // modelo de GaleriaImage
+import '../models/galeria_list_model.dart'; // modelo de GaleriaList
 import 'package:dio/dio.dart'; // clase dio para construir objeto de http
 
 /// Controlador para manejar el estado del módulo de hoteles
@@ -28,6 +30,13 @@ class HotelController extends ChangeNotifier {
   bool _isUploadingPhoto = false; // Estado de subida de foto
   String? _uploadPhotoError; // Mensaje de error al subir foto
   bool _isDeletingPhoto = false; // Estado de eliminación de foto
+  
+  // Estados para galería de hotel
+  List<GaleriaImage> _galeriaImagenes = []; // Lista de imágenes de la galería
+  bool _isLoadingGaleria = false; // Estado de carga de galería
+  bool _isUploadingGaleria = false; // Estado de subida de imagen a galería
+  String? _galeriaErrorMessage; // Mensaje de error de galería
+  int _totalImagenesGaleria = 0; // Total de imágenes en la galería
   
   // Estados para detalle (país y estado específicos)
   Pais? _paisDetail; // País específico para detalle
@@ -62,6 +71,14 @@ class HotelController extends ChangeNotifier {
   bool get isUploadingPhoto => _isUploadingPhoto;
   String? get uploadPhotoError => _uploadPhotoError;
   bool get isDeletingPhoto => _isDeletingPhoto;
+  
+  // Getters para galería de hotel
+  List<GaleriaImage> get galeriaImagenes => _galeriaImagenes;
+  bool get isLoadingGaleria => _isLoadingGaleria;
+  bool get isUploadingGaleria => _isUploadingGaleria;
+  String? get galeriaErrorMessage => _galeriaErrorMessage;
+  int get totalImagenesGaleria => _totalImagenesGaleria;
+  bool get puedeAgregarMasImagenes => _totalImagenesGaleria < 10;
   
   // Getters para detalle
   Pais? get paisDetail => _paisDetail;
@@ -714,6 +731,148 @@ class HotelController extends ChangeNotifier {
       } else {
         _uploadPhotoError = 'Error: ${e.toString()}';
         print('Error general al eliminar foto: $e');
+      }
+
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Cargar galería de imágenes del hotel
+  Future<void> cargarGaleria(int hotelId) async {
+    _isLoadingGaleria = true;
+    _galeriaErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _hotelService.listarGaleria(hotelId);
+
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        final galeriaList = GaleriaList.fromJson(response.data as Map<String, dynamic>);
+        _galeriaImagenes = galeriaList.imagenes;
+        _totalImagenesGaleria = galeriaList.total;
+      } else {
+        _galeriaImagenes = [];
+        _totalImagenesGaleria = 0;
+      }
+
+      _isLoadingGaleria = false;
+      notifyListeners();
+
+      print("Galería cargada correctamente");
+      print('Total de imágenes: $_totalImagenesGaleria');
+    } catch (e) {
+      _isLoadingGaleria = false;
+
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          if (responseData is Map && responseData['detail'] != null) {
+            _galeriaErrorMessage = responseData['detail'] as String;
+          } else {
+            _galeriaErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
+          }
+          print('Error del servidor al cargar galería: ${e.response?.data}');
+        } else {
+          _galeriaErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          print('Error de conexión al cargar galería: ${e.message}');
+        }
+      } else {
+        _galeriaErrorMessage = 'Error: ${e.toString()}';
+        print('Error general al cargar galería: $e');
+      }
+
+      _galeriaImagenes = [];
+      _totalImagenesGaleria = 0;
+      notifyListeners();
+    }
+  }
+
+  /// Subir imagen a la galería del hotel
+  /// Valida que no exceda 10 imágenes antes de subir
+  Future<bool> subirImagenGaleria(int hotelId, List<int> fileBytes, String fileName) async {
+    // Validar límite de 10 imágenes
+    if (_totalImagenesGaleria >= 10) {
+      _galeriaErrorMessage = 'Se ha alcanzado el límite máximo de 10 imágenes por hotel';
+      notifyListeners();
+      return false;
+    }
+
+    _isUploadingGaleria = true;
+    _galeriaErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _hotelService.subirImagenGaleria(hotelId, fileBytes, fileName);
+
+      // Recargar galería después de subir para obtener la lista actualizada
+      await cargarGaleria(hotelId);
+
+      _isUploadingGaleria = false;
+      notifyListeners();
+
+      print("Imagen de galería subida correctamente");
+      print('Status code: ${response.statusCode}');
+      return true;
+    } catch (e) {
+      _isUploadingGaleria = false;
+
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          if (responseData is Map && responseData['detail'] != null) {
+            _galeriaErrorMessage = responseData['detail'] as String;
+          } else {
+            _galeriaErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
+          }
+          print('Error del servidor al subir imagen a galería: ${e.response?.data}');
+        } else {
+          _galeriaErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          print('Error de conexión al subir imagen a galería: ${e.message}');
+        }
+      } else {
+        _galeriaErrorMessage = 'Error: ${e.toString()}';
+        print('Error general al subir imagen a galería: $e');
+      }
+
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Eliminar imagen de la galería del hotel
+  Future<bool> eliminarImagenGaleria(int hotelId, String nombreArchivo) async {
+    _galeriaErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _hotelService.eliminarImagenGaleria(hotelId, nombreArchivo);
+
+      // Recargar galería después de eliminar para obtener la lista actualizada
+      await cargarGaleria(hotelId);
+
+      notifyListeners();
+
+      print("Imagen de galería eliminada correctamente");
+      print('Status code: ${response.statusCode}');
+      return true;
+    } catch (e) {
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          if (responseData is Map && responseData['detail'] != null) {
+            _galeriaErrorMessage = responseData['detail'] as String;
+          } else {
+            _galeriaErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
+          }
+          print('Error del servidor al eliminar imagen de galería: ${e.response?.data}');
+        } else {
+          _galeriaErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          print('Error de conexión al eliminar imagen de galería: ${e.message}');
+        }
+      } else {
+        _galeriaErrorMessage = 'Error: ${e.toString()}';
+        print('Error general al eliminar imagen de galería: $e');
       }
 
       notifyListeners();

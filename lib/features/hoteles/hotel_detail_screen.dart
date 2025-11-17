@@ -5,6 +5,7 @@ import '../../widgets/app_sidebar.dart';
 import 'controllers/hotel_controller.dart';
 import 'models/pais_model.dart';
 import 'models/estado_model.dart';
+import 'models/galeria_image_model.dart';
 import '../login/login_screen.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -58,6 +59,8 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
             controller.loadEstadoById(hotel.idEstado!);
           }
         }
+        // Cargar galería de imágenes
+        controller.cargarGaleria(widget.hotelId);
       });
     });
   }
@@ -371,6 +374,9 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
                 Center(
                   child: _buildFotoHotel(context, controller),
                 ),
+                const SizedBox(height: 32),
+                // Galería de fotos
+                _buildGaleriaSection(context, controller),
                 const SizedBox(height: 32),
                 // Campo: Nombre del hotel (EDITABLE)
                 _buildTextField(
@@ -1367,6 +1373,468 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
               success
                   ? 'Foto de hotel restaurada correctamente'
                   : controller.uploadPhotoError ?? 'Error al eliminar foto',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Widget para construir la sección de galería
+  Widget _buildGaleriaSection(BuildContext context, HotelController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título y contador
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Galería de fotos',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1a1a1a),
+              ),
+            ),
+            Text(
+              '${controller.totalImagenesGaleria}/10',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: controller.totalImagenesGaleria >= 10 
+                    ? Colors.red 
+                    : const Color(0xFF6b7280),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Grid de imágenes o mensaje vacío
+        if (controller.isLoadingGaleria)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(
+                color: Color(0xFF667eea),
+              ),
+            ),
+          )
+        else if (controller.galeriaImagenes.isEmpty)
+          _buildEmptyGaleria(context, controller)
+        else
+          _buildGaleriaGrid(context, controller),
+        // Mensaje de error si existe
+        if (controller.galeriaErrorMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      controller.galeriaErrorMessage!,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Widget para mostrar estado vacío de galería
+  Widget _buildEmptyGaleria(BuildContext context, HotelController controller) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.photo_library_outlined,
+            size: 48,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No hay imágenes en la galería',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          if (controller.puedeAgregarMasImagenes) ...[
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _mostrarDialogoAgregarImagen(context, controller),
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text('Agregar primera imagen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF667eea),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Widget para construir el grid de imágenes de la galería
+  Widget _buildGaleriaGrid(BuildContext context, HotelController controller) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: controller.galeriaImagenes.length + (controller.puedeAgregarMasImagenes ? 1 : 0),
+      itemBuilder: (context, index) {
+        // Si es el último índice y se puede agregar más, mostrar botón de agregar
+        if (index == controller.galeriaImagenes.length && controller.puedeAgregarMasImagenes) {
+          return _buildAddImageButton(context, controller);
+        }
+        // Mostrar imagen
+        return _buildGaleriaImageItem(context, controller.galeriaImagenes[index], controller);
+      },
+    );
+  }
+
+  /// Widget para construir un item de imagen en la galería
+  Widget _buildGaleriaImageItem(BuildContext context, GaleriaImage imagen, HotelController controller) {
+    return Stack(
+      children: [
+        // Imagen
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: imagen.urlPublica != null && imagen.urlPublica!.isNotEmpty
+              ? Image.network(
+                  imagen.urlPublica!,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                        size: 32,
+                      ),
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: Colors.grey.shade100,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF667eea),
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : Container(
+                  color: Colors.grey.shade200,
+                  child: const Icon(
+                    Icons.image,
+                    color: Colors.grey,
+                    size: 32,
+                  ),
+                ),
+        ),
+        // Botón de eliminar
+        Positioned(
+          top: 4,
+          right: 4,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              icon: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 18,
+              ),
+              onPressed: () => _eliminarImagenGaleria(context, imagen, controller),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Widget para botón de agregar imagen
+  Widget _buildAddImageButton(BuildContext context, HotelController controller) {
+    return InkWell(
+      onTap: controller.isUploadingGaleria 
+          ? null 
+          : () => _mostrarDialogoAgregarImagen(context, controller),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            style: BorderStyle.solid,
+            width: 2,
+          ),
+        ),
+        child: controller.isUploadingGaleria
+            ? const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF667eea),
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate,
+                    size: 32,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Agregar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  /// Método para mostrar diálogo de agregar imagen
+  void _mostrarDialogoAgregarImagen(BuildContext context, HotelController controller) {
+    if (!controller.puedeAgregarMasImagenes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Se ha alcanzado el límite máximo de 10 imágenes por hotel'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Seleccionar de galería'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromGalleryForGaleria(context, controller);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Tomar foto'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromCameraForGaleria(context, controller);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancelar'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Seleccionar foto desde galería para galería
+  Future<void> _pickImageFromGalleryForGaleria(BuildContext context, HotelController controller) async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      if (photo == null) return;
+
+      // Validar límite antes de subir
+      if (!controller.puedeAgregarMasImagenes) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Se ha alcanzado el límite máximo de 10 imágenes por hotel'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Leer los bytes del archivo
+      final fileBytes = await photo.readAsBytes();
+      final fileName = photo.name;
+
+      final success = await controller.subirImagenGaleria(widget.hotelId, fileBytes, fileName);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Imagen agregada a la galería correctamente'
+                  : controller.galeriaErrorMessage ?? 'Error al subir imagen',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Seleccionar foto desde cámara para galería
+  Future<void> _pickImageFromCameraForGaleria(BuildContext context, HotelController controller) async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      if (photo == null) return;
+
+      // Validar límite antes de subir
+      if (!controller.puedeAgregarMasImagenes) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Se ha alcanzado el límite máximo de 10 imágenes por hotel'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Leer los bytes del archivo
+      final fileBytes = await photo.readAsBytes();
+      final fileName = photo.name;
+
+      final success = await controller.subirImagenGaleria(widget.hotelId, fileBytes, fileName);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Imagen agregada a la galería correctamente'
+                  : controller.galeriaErrorMessage ?? 'Error al subir imagen',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al tomar foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Eliminar imagen de galería
+  Future<void> _eliminarImagenGaleria(BuildContext context, GaleriaImage imagen, HotelController controller) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar imagen'),
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar esta imagen de la galería?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final success = await controller.eliminarImagenGaleria(widget.hotelId, imagen.nombre);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Imagen eliminada correctamente'
+                  : controller.galeriaErrorMessage ?? 'Error al eliminar imagen',
             ),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
