@@ -3,6 +3,9 @@ import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
 import 'models/piso_model.dart';
 import 'services/piso_service.dart';
+import '../hoteles/controllers/hotel_controller.dart';
+import './controllers/piso_controller.dart';
+import 'package:provider/provider.dart';
 
 class PisoCreateScreen extends StatefulWidget {
   const PisoCreateScreen({Key? key}) : super(key: key);
@@ -14,7 +17,6 @@ class PisoCreateScreen extends StatefulWidget {
 class _PisoCreateScreenState extends State<PisoCreateScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _idHotelController = TextEditingController();
   final _nivelController = TextEditingController();
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
@@ -24,7 +26,6 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
 
   @override
   void dispose() {
-    _idHotelController.dispose();
     _nivelController.dispose();
     _nombreController.dispose();
     _descripcionController.dispose();
@@ -36,8 +37,23 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
 
     setState(() => _isSaving = true);
 
+    final hotelController = Provider.of<HotelController>(
+      context,
+      listen: false,
+    );
+
+    if (hotelController.hotelSeleccionado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona un hotel primero')),
+      );
+      setState(() => _isSaving = false);
+      return;
+    }
+
+    final idHotel = hotelController.hotelSeleccionado!.idHotel;
+
     final piso = PisoCreateModel(
-      idHotel: int.parse(_idHotelController.text),
+      idHotel: idHotel,
       nivel: int.parse(_nivelController.text),
       nombre: _nombreController.text.trim(),
       descripcion: _descripcionController.text.trim(),
@@ -55,6 +71,8 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
         const SnackBar(content: Text('Piso registrado correctamente')),
       );
       Navigator.pop(context);
+      final pisoController = Provider.of<PisoController>(context, listen: false);
+      await pisoController.cargarPisosPorHotel(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al registrar el piso')),
@@ -70,11 +88,7 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            Column(
-              children: const [
-                AppHeader(),
-              ],
-            ),
+            Column(children: const [AppHeader()]),
             Padding(
               padding: const EdgeInsets.only(top: 80),
               child: _buildForm(),
@@ -95,7 +109,7 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
                     ],
                   ),
                 ),
-              )
+              ),
           ],
         ),
       ),
@@ -118,7 +132,7 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
                 color: Color(0xFF1a1a1a),
               ),
             ),
-            
+
             const SizedBox(height: 20),
 
             _buildTextField(
@@ -137,8 +151,7 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
               label: "Nombre",
               hint: "Ejemplo: Piso Ejecutivo",
               icon: Icons.text_fields,
-              validator: (value) =>
-                  value!.isEmpty ? "Ingresa un nombre" : null,
+              validator: (value) => value!.isEmpty ? "Ingresa un nombre" : null,
             ),
             const SizedBox(height: 20),
 
@@ -167,13 +180,10 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
                 ),
                 child: const Text(
                   "Guardar Piso",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -196,9 +206,7 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, color: Color(0xFF6b7280)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFe5e7eb)),

@@ -64,25 +64,46 @@ class PisoService {
   }
 
   Future<Piso> createPiso(PisoCreateModel model) async {
-    final response = await _dio.post(
-      "$baseUrl/pisos",
-      data: model.toJson(),
-    );
+    final token = await _getToken();
 
-    return Piso.fromJson(response.data);
-  }
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
 
-  Future<Piso> updatePiso(int idPiso, PisoUpdateModel model) async {
-    final response = await _dio.put(
-      "$baseUrl/pisos/$idPiso",
-      data: model.toJson(),
-    );
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
 
-    return Piso.fromJson(response.data);
-  }
+    try{
+      final response = await _dio.post(
+        baseUrl + EndpointsPiso.pisos,
+        data: model.toJson(),
+        options: Options(headers: headers),
+      );
+      
+      return Piso.fromJson(response.data);
+    } catch (e) {
+      // Manejo de errores
+        rethrow;
+      }
+    }
+    
 
-  Future<bool> deletePiso(int idPiso) async {
-    await _dio.delete("$baseUrl/pisos/$idPiso");
-    return true;
-  }
+  // Future<Piso> updatePiso(int idPiso, PisoUpdateModel model) async {
+  //   final response = await _dio.put(
+  //     "$baseUrl/pisos/$idPiso",
+  //     data: model.toJson(),
+  //   );
+
+  //   return Piso.fromJson(response.data);
+  // }
+
+  // Future<bool> deletePiso(int idPiso) async {
+  //   await _dio.delete("$baseUrl/pisos/$idPiso");
+  //   return true;
+  // }
 }
