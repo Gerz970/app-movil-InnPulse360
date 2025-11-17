@@ -5,6 +5,7 @@ import '../features/hoteles/hotels_list_screen.dart';
 import '../features/clientes/clientes_list_screen.dart';
 import '../features/incidencias/incidencias_list_screen.dart';
 import '../features/common/under_construction_screen.dart';
+import '../features/hoteles/controllers/hotel_controller.dart';
 
 /// Widget de sidebar lateral reutilizable para toda la aplicación
 /// Muestra información del usuario y lista de módulos disponibles
@@ -23,11 +24,12 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hotelController = Provider.of<HotelController>(context);
     return Consumer<AuthController>(
       builder: (context, authController, child) {
         // Obtener datos del usuario del loginResponse
         final loginResponse = authController.loginResponse;
-        
+
         // Extraer el campo "login" del usuario
         String userLogin = 'Usuario';
         if (loginResponse != null) {
@@ -111,6 +113,92 @@ class AppSidebar extends StatelessWidget {
                     ],
                   ),
                 ),
+                // === SELECTOR DE HOTEL ===
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  child: Consumer<HotelController>(
+                    builder: (context, hotelController, child) {
+                      // Mientras está cargando hoteles
+                      if (hotelController.isLoading) {
+                        return Row(
+                          children: const [
+                            CircularProgressIndicator(strokeWidth: 2),
+                            SizedBox(width: 12),
+                            Text(
+                              "Cargando hoteles...",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF6b7280),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      // Si hubo error
+                      if (hotelController.errorMessage != null) {
+                        return Text(
+                          "Error al cargar hoteles",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.red[400],
+                          ),
+                        );
+                      }
+
+                      // Si no hay hoteles
+                      if (hotelController.hotels.isEmpty) {
+                        return const Text(
+                          "No hay hoteles",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF6b7280),
+                          ),
+                        );
+                      }
+
+                      return DropdownButtonFormField(
+                        value: hotelController.hotelSeleccionado,
+                        decoration: InputDecoration(
+                          labelText: "Hotel",
+                          labelStyle: const TextStyle(
+                            color: Color(0xFF6b7280),
+                            fontSize: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: hotelController.hotels.map((hotel) {
+                          return DropdownMenuItem(
+                            value: hotel,
+                            child: Text(
+                              hotel.nombre,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF1a1a1a),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (selectedHotel) {
+                          if (selectedHotel != null) {
+                            hotelController.seleccionarHotel(selectedHotel);
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+
                 // Lista de módulos
                 Expanded(
                   child: ListView(
@@ -126,7 +214,8 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const IncidenciasListScreen(),
+                              builder: (context) =>
+                                  const IncidenciasListScreen(),
                             ),
                           );
                         },
@@ -142,9 +231,10 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Usuarios',
-                              ),
+                              builder: (context) =>
+                                  const UnderConstructionScreen(
+                                    title: 'Usuarios',
+                                  ),
                             ),
                           );
                         },
@@ -192,9 +282,8 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Pisos',
-                              ),
+                              builder: (context) =>
+                                  const UnderConstructionScreen(title: 'Pisos'),
                             ),
                           );
                         },
@@ -210,9 +299,10 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Habitaciones',
-                              ),
+                              builder: (context) =>
+                                  const UnderConstructionScreen(
+                                    title: 'Habitaciones',
+                                  ),
                             ),
                           );
                         },
@@ -228,9 +318,10 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Reservaciones',
-                              ),
+                              builder: (context) =>
+                                  const UnderConstructionScreen(
+                                    title: 'Reservaciones',
+                                  ),
                             ),
                           );
                         },
@@ -246,9 +337,10 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Mantenimiento',
-                              ),
+                              builder: (context) =>
+                                  const UnderConstructionScreen(
+                                    title: 'Mantenimiento',
+                                  ),
                             ),
                           );
                         },
@@ -264,9 +356,10 @@ class AppSidebar extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const UnderConstructionScreen(
-                                title: 'Limpieza',
-                              ),
+                              builder: (context) =>
+                                  const UnderConstructionScreen(
+                                    title: 'Limpieza',
+                                  ),
                             ),
                           );
                         },
@@ -297,11 +390,7 @@ class AppSidebar extends StatelessWidget {
           shape: BoxShape.circle,
           color: const Color(0xFF667eea).withOpacity(0.1),
         ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF667eea),
-          size: 22,
-        ),
+        child: Icon(icon, color: const Color(0xFF667eea), size: 22),
       ),
       title: Text(
         title,
@@ -314,10 +403,7 @@ class AppSidebar extends StatelessWidget {
       ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
 }
-

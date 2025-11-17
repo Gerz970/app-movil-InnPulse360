@@ -376,7 +376,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authController = Provider.of<AuthController>(context, listen: false);
     
     // Realizar petición de login al API
-    final success = await authController.login(login, password);
+    final success = await authController.login(login, password, context);
     
     if (success) {
       // Login exitoso - navegar a HomeScreen

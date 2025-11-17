@@ -68,6 +68,16 @@ class HotelController extends ChangeNotifier {
   bool get isDeleting => _isDeleting;
   String? get deleteErrorMessage => _deleteErrorMessage;
 
+  // Propiedades para seleccionar hotel
+  Hotel? _hotelSeleccionado;
+  Hotel? get hotelSeleccionado => _hotelSeleccionado;
+
+  void seleccionarHotel(Hotel hotel) {
+    _hotelSeleccionado = hotel;
+    notifyListeners();
+  }
+
+
   /// Método para obtener el listado de hoteles
   Future<void> fetchHotels({int skip = 0, int limit = 100}) async {
     // 1.- Preparar petición

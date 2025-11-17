@@ -3,7 +3,9 @@ import '../services/auth_service.dart'; // para conexion con servicio
 import '../services/session_storage.dart'; // para almacenamiento de sesión
 import '../models/request_login_model.dart'; // modelo de body para request
 import 'package:dio/dio.dart'; // clase dio para construir objeto de http
-
+import 'package:provider/provider.dart';
+import 'package:flutter/widgets.dart';
+import '../../../features/hoteles/controllers/hotel_controller.dart';
   // ChangeNotifier: sirve para notificar 
 class AuthController extends ChangeNotifier 
 {
@@ -31,7 +33,7 @@ class AuthController extends ChangeNotifier
     return _loginResponse;
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String username, String password, BuildContext context) async {
     // 1.- Preparar petición
     _isLoading = true; //activar loading
     _errorMessage = null; // limpiar error anterior (En caso que existiera)
@@ -51,7 +53,16 @@ class AuthController extends ChangeNotifier
         print("Sesión guardada en caché");
       }
       
-      // 6.- desactivar loading y notificar estado
+      // 6.- CARGAR LOS HOTELES DESPUÉS DEL LOGIN
+      try {
+        final hotelController = Provider.of<HotelController>(context, listen: false);
+        await hotelController.fetchHotels();
+        print("Hoteles cargados después del login");
+      } catch (e) {
+        print("Error cargando hoteles tras login: $e");
+      }
+
+    // 7.- desactivar loading y notificar estado
       _isLoading = false;
       notifyListeners();
       //7.- imprimir en consola la respuesta
