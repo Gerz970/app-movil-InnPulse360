@@ -110,16 +110,38 @@ class AuthController extends ChangeNotifier
 
   /// Cargar la sesión guardada del almacenamiento
   /// Se llama automáticamente al inicializar el controlador
+  /// Crea una copia profunda nueva del objeto para que Flutter detecte los cambios
   Future<void> loadSession() async {
     try {
       final session = await SessionStorage.getSession();
       if (session != null) {
-        _loginResponse = session;
+        // Crear una copia profunda nueva del objeto session
+        // Esto asegura que Flutter detecte el cambio cuando se llama notifyListeners()
+        final sessionCopy = Map<String, dynamic>.from(session);
+        
+        // Crear una copia nueva del objeto usuario si existe
+        if (session['usuario'] is Map<String, dynamic>) {
+          sessionCopy['usuario'] = Map<String, dynamic>.from(session['usuario'] as Map<String, dynamic>);
+        }
+        
+        // Asignar la nueva referencia para que Flutter detecte el cambio
+        _loginResponse = sessionCopy;
+        
+        print("DEBUG AuthController: Sesión cargada desde caché (nueva referencia creada)");
+        // Debug: imprimir la foto de perfil si existe
+        if (_loginResponse?['usuario'] is Map<String, dynamic>) {
+          final fotoUrl = _loginResponse!['usuario']['url_foto_perfil'];
+          final timestamp = _loginResponse!['usuario']['foto_perfil_timestamp'];
+          print("DEBUG AuthController: Foto de perfil en sesión cargada: $fotoUrl");
+          print("DEBUG AuthController: Timestamp de foto: $timestamp");
+        }
+        
+        // Notificar cambios después de imprimir logs
         notifyListeners();
-        print("Sesión cargada desde caché");
+        print("DEBUG AuthController: notifyListeners() ejecutado");
       }
     } catch (e) {
-      print('Error al cargar sesión: $e');
+      print('ERROR al cargar sesión: $e');
     }
   }
 

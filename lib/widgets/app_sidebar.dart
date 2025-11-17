@@ -5,6 +5,7 @@ import '../features/hoteles/hotels_list_screen.dart';
 import '../features/clientes/clientes_list_screen.dart';
 import '../features/incidencias/incidencias_list_screen.dart';
 import '../features/common/under_construction_screen.dart';
+import '../features/perfil/screens/perfil_screen.dart';
 
 /// Widget de sidebar lateral reutilizable para toda la aplicación
 /// Muestra información del usuario y lista de módulos disponibles
@@ -46,69 +47,69 @@ class AppSidebar extends StatelessWidget {
             child: Column(
               children: [
                 // Sección superior con información del usuario
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: const Color(0xFFe5e7eb),
-                        width: 1,
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PerfilScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: const Color(0xFFe5e7eb),
+                          width: 1,
+                        ),
                       ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      // Foto de perfil circular
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF667eea).withOpacity(0.1),
-                          border: Border.all(
-                            color: const Color(0xFF667eea).withOpacity(0.2),
-                            width: 2,
+                    child: Row(
+                      children: [
+                        // Foto de perfil circular - construida directamente desde loginResponse
+                        _buildAvatarFromSession(loginResponse),
+                        const SizedBox(width: 12),
+                        // Login del usuario
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                userLogin,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1a1a1a),
+                                  letterSpacing: -0.3,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Usuario activo',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF6b7280),
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Color(0xFF667eea),
-                          size: 28,
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFF6b7280),
+                          size: 20,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Login del usuario
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              userLogin,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1a1a1a),
-                                letterSpacing: -0.3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Usuario activo',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF6b7280),
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 // Lista de módulos
@@ -316,6 +317,94 @@ class AppSidebar extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  /// Construir el avatar directamente desde loginResponse
+  /// Se ejecuta cada vez que el Consumer se reconstruye
+  Widget _buildAvatarFromSession(Map<String, dynamic>? loginResponse) {
+    // Intentar obtener foto de perfil desde la sesión
+    String? fotoUrl;
+    if (loginResponse != null) {
+      // Intentar desde objeto usuario
+      if (loginResponse['usuario'] is Map<String, dynamic>) {
+        fotoUrl = loginResponse['usuario']['url_foto_perfil'] as String?;
+      }
+      // Intentar desde raíz
+      if (fotoUrl == null) {
+        fotoUrl = loginResponse['url_foto_perfil'] as String?;
+      }
+    }
+    
+    // Obtener timestamp de actualización de la sesión para evitar caché
+    int? timestampFoto = loginResponse?['usuario']?['foto_perfil_timestamp'] as int?;
+    if (timestampFoto == null) {
+      timestampFoto = loginResponse?['foto_perfil_timestamp'] as int?;
+    }
+    
+    // Agregar timestamp a la URL para evitar caché cuando se actualiza la foto
+    String? fotoUrlConCache = fotoUrl;
+    if (fotoUrl != null && fotoUrl.isNotEmpty) {
+      // Agregar parámetro de query único basado en el timestamp guardado
+      final separator = fotoUrl.contains('?') ? '&' : '?';
+      final cacheBuster = timestampFoto ?? DateTime.now().millisecondsSinceEpoch;
+      fotoUrlConCache = '$fotoUrl${separator}t=$cacheBuster';
+      print('DEBUG Sidebar: Mostrando foto de perfil: $fotoUrl (timestamp: $cacheBuster)');
+    } else {
+      print('DEBUG Sidebar: No hay foto de perfil disponible');
+    }
+    
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFF667eea).withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: fotoUrlConCache != null && fotoUrlConCache.isNotEmpty
+            ? Image.network(
+                fotoUrlConCache,
+                key: ValueKey('${fotoUrl}_$timestampFoto'), // Key única que incluye URL y timestamp
+                fit: BoxFit.cover,
+                cacheWidth: 96, // Optimización: cachear a tamaño específico
+                cacheHeight: 96,
+                errorBuilder: (context, error, stackTrace) {
+                  print('DEBUG Sidebar: Error al cargar imagen: $error');
+                  return Container(
+                    color: const Color(0xFF667eea).withOpacity(0.1),
+                    child: const Icon(
+                      Icons.person,
+                      color: Color(0xFF667eea),
+                      size: 28,
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: const Color(0xFF667eea).withOpacity(0.1),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Container(
+                color: const Color(0xFF667eea).withOpacity(0.1),
+                child: const Icon(
+                  Icons.person,
+                  color: Color(0xFF667eea),
+                  size: 28,
+                ),
+              ),
       ),
     );
   }
