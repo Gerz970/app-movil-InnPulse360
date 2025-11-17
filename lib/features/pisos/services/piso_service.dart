@@ -1,22 +1,25 @@
-import 'package:dio/dio.dart'; // se importa libreria para hacer peticiones HTTP al backend
-import '../../../api/api_config.dart'; // importar configuracion del api
+import 'package:dio/dio.dart';
+import '../models/piso_model.dart';
 import '../../../api/endpoints_piso.dart'; // importar endpoints de hoteles
+import '../../../api/api_config.dart'; // importar configuracion del api
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 
 class PisoService {
   final Dio _dio;
-
   final String baseUrl = ApiConfig.baseUrl + ApiConfig.apiVersion;
 
-  PisoService({Dio? dio}): _dio = dio ?? Dio(){
+  PisoService({Dio? dio}) : _dio = dio ?? Dio() {
+    // configuración para la petición
     _dio.options.connectTimeout = Duration(seconds: ApiConfig.connectTimeoutSeconds);
     _dio.options.receiveTimeout = Duration(seconds: ApiConfig.receiveTimeoutSeconds);
     _dio.options.headers = {
+      // son valores de configuracion del endpoint
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
     };
   }
 
+  /// Obtener el token de la sesión guardada
   Future<String?> _getToken() async {
     try {
       final session = await SessionStorage.getSession();
@@ -35,10 +38,8 @@ class PisoService {
     }
   }
 
-  Future<Response> fetchHotels({int skip = 0, int limit = 100}) async {
-    // Obtener token de la sesión
+  Future<List<Piso>> getPisosByHotel(int idHotel) async {
     final token = await _getToken();
-    
     if (token == null) {
       throw DioException(
         requestOptions: RequestOptions(path: ''),
@@ -48,24 +49,40 @@ class PisoService {
     }
 
     // Construir la URL con query parameters
-    final url = baseUrl + EndpointsPiso.getByHotel(1);
-
-    // Configurar headers con el token de autenticación
+    final url = baseUrl + EndpointsPiso.getByHotel(idHotel);
     final headers = {
       'Authorization': 'Bearer $token',
     };
-
-    // Hacer la petición GET
-    try {
-      final response = await _dio.get(
-        url,
-        options: Options(headers: headers),
-      );
-
-      return response; // Respuesta del API
-    } catch (e) {
+    try{
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return (response.data as List)
+        .map((json) => Piso.fromJson(json))
+        .toList();    } catch (e) {
       // Manejo de errores
       rethrow;
     }
+  }
+
+  Future<Piso> createPiso(PisoCreateModel model) async {
+    final response = await _dio.post(
+      "$baseUrl/pisos",
+      data: model.toJson(),
+    );
+
+    return Piso.fromJson(response.data);
+  }
+
+  Future<Piso> updatePiso(int idPiso, PisoUpdateModel model) async {
+    final response = await _dio.put(
+      "$baseUrl/pisos/$idPiso",
+      data: model.toJson(),
+    );
+
+    return Piso.fromJson(response.data);
+  }
+
+  Future<bool> deletePiso(int idPiso) async {
+    await _dio.delete("$baseUrl/pisos/$idPiso");
+    return true;
   }
 }

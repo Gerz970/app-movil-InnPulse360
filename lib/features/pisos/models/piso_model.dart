@@ -1,28 +1,55 @@
 class Piso {
   final int idPiso;
   final int idHotel;
-  final int numeroPisos;
   final String nombre;
-  final String descripcion;
-  final int estatusId;
+  final int nivel;
 
   Piso({
     required this.idPiso,
     required this.idHotel,
-    required this.numeroPisos,
     required this.nombre,
-    required this.descripcion,
-    required this.estatusId,
+    required this.nivel,
   });
 
   factory Piso.fromJson(Map<String, dynamic> json) {
     return Piso(
-      idPiso: json['id_piso'] as int ?? 0,
-      idHotel: json['id_hotel'] as int ?? 0,
-      numeroPisos: json['numero_pisos'] as int ?? 0,
-      nombre: json['nombre'] as String? ?? '',
-      descripcion: json['descripcion'] as String? ?? '',
-      estatusId: json['estatus_id'] as int ?? 0,
+      idPiso: json['id_piso'],
+      idHotel: json['id_hotel'],
+      nombre: json['nombre'],
+      nivel: json['numero_pisos'],
     );
   }
+}
+
+class PisoCreateModel {
+  final int idHotel;
+  final String nombre;
+  final int nivel;
+
+  PisoCreateModel({
+    required this.idHotel,
+    required this.nombre,
+    required this.nivel,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id_hotel': idHotel,
+        'nombre': nombre,
+        'nivel': nivel,
+      };
+}
+
+class PisoUpdateModel {
+  final String nombre;
+  final int nivel;
+
+  PisoUpdateModel({
+    required this.nombre,
+    required this.nivel,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'nivel': nivel,
+      };
 }

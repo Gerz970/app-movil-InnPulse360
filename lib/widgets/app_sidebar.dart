@@ -1,3 +1,4 @@
+import 'package:app_movil_innpulse/features/pisos/piso_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
@@ -283,7 +284,7 @@ class AppSidebar extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  const UnderConstructionScreen(title: 'Pisos'),
+                                  const PisosListScreen(),
                             ),
                           );
                         },

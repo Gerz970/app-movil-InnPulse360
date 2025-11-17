@@ -1,3 +1,4 @@
+import 'package:app_movil_innpulse/features/pisos/controllers/piso_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'features/login/login_screen.dart';
@@ -23,6 +24,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HotelController()),
         ChangeNotifierProvider(create: (_) => ClienteController()),
         ChangeNotifierProvider(create: (_) => IncidenciaController()),
+        ChangeNotifierProvider(create: (_) => PisoController()),
+
       ],
       child: MaterialApp(
         title: 'InnPulse App',
