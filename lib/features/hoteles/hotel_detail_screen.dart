@@ -6,6 +6,7 @@ import 'controllers/hotel_controller.dart';
 import 'models/pais_model.dart';
 import 'models/estado_model.dart';
 import '../login/login_screen.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Pantalla de detalle y edición de hotel
 /// Muestra formulario en modo edición con campos precargados
@@ -23,6 +24,7 @@ class HotelDetailScreen extends StatefulWidget {
 
 class _HotelDetailScreenState extends State<HotelDetailScreen> {
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
   
   // Controladores de texto
   final _nombreController = TextEditingController();
@@ -363,6 +365,11 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
                     fontWeight: FontWeight.w400,
                     color: Color(0xFF6b7280),
                   ),
+                ),
+                const SizedBox(height: 32),
+                // Foto de hotel
+                Center(
+                  child: _buildFotoHotel(context, controller),
                 ),
                 const SizedBox(height: 32),
                 // Campo: Nombre del hotel (EDITABLE)
@@ -1094,6 +1101,276 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
         } catch (err) {
           print('Error al cerrar diálogo en catch: $err');
         }
+      }
+    }
+  }
+
+  /// Widget para construir la foto de hotel
+  Widget _buildFotoHotel(BuildContext context, HotelController controller) {
+    final hotel = controller.hotelDetail;
+    if (hotel == null) return const SizedBox.shrink();
+    
+    String? fotoUrl = hotel.urlFotoPerfil;
+    
+    return Stack(
+      children: [
+        // Foto de hotel circular
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF667eea).withOpacity(0.3),
+              width: 3,
+            ),
+          ),
+          child: ClipOval(
+            child: fotoUrl != null && fotoUrl.isNotEmpty
+                ? Image.network(
+                    fotoUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: const Color(0xFF667eea).withOpacity(0.1),
+                        child: const Icon(
+                          Icons.hotel,
+                          color: Color(0xFF667eea),
+                          size: 60,
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: const Color(0xFF667eea).withOpacity(0.1),
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: const Color(0xFF667eea).withOpacity(0.1),
+                    child: const Icon(
+                      Icons.hotel,
+                      color: Color(0xFF667eea),
+                      size: 60,
+                    ),
+                  ),
+          ),
+        ),
+        // Botón para cambiar foto
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF667eea),
+              border: Border.all(
+                color: Colors.white,
+                width: 3,
+              ),
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: controller.isUploadingPhoto || controller.isDeletingPhoto
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+              onPressed: controller.isUploadingPhoto || controller.isDeletingPhoto
+                  ? null
+                  : () => _mostrarOpcionesFoto(context, controller),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Método para mostrar opciones de foto
+  void _mostrarOpcionesFoto(BuildContext context, HotelController controller) {
+    final hotel = controller.hotelDetail;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Seleccionar de galería'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromGallery(context, controller);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Tomar foto'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromCamera(context, controller);
+              },
+            ),
+            if (hotel != null &&
+                hotel.urlFotoPerfil != null &&
+                hotel.urlFotoPerfil!.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Restaurar foto por defecto', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteFoto(context, controller);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancelar'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Seleccionar foto desde galería
+  Future<void> _pickImageFromGallery(BuildContext context, HotelController controller) async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      if (photo == null) return;
+
+      // Leer los bytes del archivo
+      final fileBytes = await photo.readAsBytes();
+      final fileName = photo.name;
+
+      final success = await controller.subirFotoHotel(widget.hotelId, fileBytes, fileName);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Foto de hotel actualizada correctamente'
+                  : controller.uploadPhotoError ?? 'Error al subir foto',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Seleccionar foto desde cámara
+  Future<void> _pickImageFromCamera(BuildContext context, HotelController controller) async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      if (photo == null) return;
+
+      // Leer los bytes del archivo
+      final fileBytes = await photo.readAsBytes();
+      final fileName = photo.name;
+
+      final success = await controller.subirFotoHotel(widget.hotelId, fileBytes, fileName);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Foto de hotel actualizada correctamente'
+                  : controller.uploadPhotoError ?? 'Error al subir foto',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al tomar foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Eliminar foto de hotel
+  Future<void> _deleteFoto(BuildContext context, HotelController controller) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restaurar foto por defecto'),
+        content: const Text(
+          '¿Estás seguro de que deseas restaurar la foto de hotel por defecto?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Restaurar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final success = await controller.eliminarFotoHotel(widget.hotelId);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Foto de hotel restaurada correctamente'
+                  : controller.uploadPhotoError ?? 'Error al eliminar foto',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
       }
     }
   }

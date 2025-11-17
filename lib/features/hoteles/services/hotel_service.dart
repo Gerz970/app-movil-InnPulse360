@@ -425,5 +425,95 @@ class HotelService {
       rethrow;
     }
   }
+
+  /// Método para subir una foto de hotel
+  /// Requiere token de autenticación en el header
+  /// Tipo de cuerpo: multipart/form-data
+  /// Parámetros: idHotel, fileBytes (bytes del archivo) y fileName (nombre del archivo)
+  Future<Response> subirFotoHotel(int idHotel, List<int> fileBytes, String fileName) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.actualizarFotoHotel(idHotel);
+
+    // Obtener la extensión del archivo
+    final extension = fileName.split('.').last;
+    final finalFileName = 'hotel_${idHotel}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+    // Crear FormData con el archivo usando bytes (compatible con todas las plataformas)
+    FormData formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        fileBytes,
+        filename: finalFileName,
+      ),
+    });
+
+    // Configurar headers con el token de autenticación
+    // No incluir Content-Type para multipart, Dio lo maneja automáticamente
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición PUT con multipart
+    try {
+      final response = await _dio.put(
+        url,
+        data: formData,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para eliminar/restaurar foto de hotel por defecto
+  /// Requiere token de autenticación en el header
+  /// Parámetro: idHotel del hotel
+  Future<Response> eliminarFotoHotel(int idHotel) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.eliminarFotoHotel(idHotel);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición DELETE
+    try {
+      final response = await _dio.delete(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
 }
 

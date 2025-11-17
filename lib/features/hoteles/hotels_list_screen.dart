@@ -237,19 +237,60 @@ class _HotelsListScreenState extends State<HotelsListScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Ícono de hotel
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF667eea).withOpacity(0.1),
-                ),
-                child: const Icon(
-                  Icons.hotel,
-                  color: Color(0xFF667eea),
-                  size: 28,
-                ),
+              // Foto de hotel
+              ClipOval(
+                child: hotel.urlFotoPerfil != null && hotel.urlFotoPerfil!.isNotEmpty
+                    ? Image.network(
+                        hotel.urlFotoPerfil!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFF667eea).withOpacity(0.1),
+                            ),
+                            child: const Icon(
+                              Icons.hotel,
+                              color: Color(0xFF667eea),
+                              size: 28,
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFF667eea).withOpacity(0.1),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF667eea),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF667eea).withOpacity(0.1),
+                        ),
+                        child: const Icon(
+                          Icons.hotel,
+                          color: Color(0xFF667eea),
+                          size: 28,
+                        ),
+                      ),
               ),
               const SizedBox(width: 16),
               // Información del hotel

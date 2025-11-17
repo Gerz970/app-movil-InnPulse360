@@ -24,6 +24,11 @@ class HotelController extends ChangeNotifier {
   bool _isCreating = false; // Estado de creación de hotel
   String? _createErrorMessage; // Mensaje de error al crear
   
+  // Estados para foto de hotel
+  bool _isUploadingPhoto = false; // Estado de subida de foto
+  String? _uploadPhotoError; // Mensaje de error al subir foto
+  bool _isDeletingPhoto = false; // Estado de eliminación de foto
+  
   // Estados para detalle (país y estado específicos)
   Pais? _paisDetail; // País específico para detalle
   Estado? _estadoDetail; // Estado específico para detalle
@@ -52,6 +57,11 @@ class HotelController extends ChangeNotifier {
   bool get isLoadingCatalogs => _isLoadingCatalogs;
   bool get isCreating => _isCreating;
   String? get createErrorMessage => _createErrorMessage;
+  
+  // Getters para foto de hotel
+  bool get isUploadingPhoto => _isUploadingPhoto;
+  String? get uploadPhotoError => _uploadPhotoError;
+  bool get isDeletingPhoto => _isDeletingPhoto;
   
   // Getters para detalle
   Pais? get paisDetail => _paisDetail;
@@ -462,6 +472,7 @@ class HotelController extends ChangeNotifier {
           idPais: _hotelDetail!.idPais,
           idEstado: _hotelDetail!.idEstado,
           numeroEstrellas: hotelData['numero_estrellas'] as int? ?? _hotelDetail!.numeroEstrellas,
+          urlFotoPerfil: _hotelDetail!.urlFotoPerfil,
         );
       }
 
@@ -588,6 +599,121 @@ class HotelController extends ChangeNotifier {
         // Otro tipo de error
         _deleteErrorMessage = 'Error: ${e.toString()}';
         print('Error general al eliminar hotel: $e');
+      }
+
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Subir foto de hotel
+  /// Recibe hotelId, los bytes del archivo y el nombre del archivo
+  Future<bool> subirFotoHotel(int hotelId, List<int> fileBytes, String fileName) async {
+    _isUploadingPhoto = true;
+    _uploadPhotoError = null;
+    notifyListeners();
+
+    try {
+      final response = await _hotelService.subirFotoHotel(hotelId, fileBytes, fileName);
+
+      if (response.data != null) {
+        final responseData = response.data as Map<String, dynamic>;
+        
+        // Actualizar la URL de la foto en el hotel del detalle
+        if (_hotelDetail != null && responseData['public_url'] != null) {
+          final nuevaUrlFoto = responseData['public_url'] as String;
+          _hotelDetail = Hotel(
+            idHotel: _hotelDetail!.idHotel,
+            nombre: _hotelDetail!.nombre,
+            direccion: _hotelDetail!.direccion,
+            codigoPostal: _hotelDetail!.codigoPostal,
+            telefono: _hotelDetail!.telefono,
+            emailContacto: _hotelDetail!.emailContacto,
+            idPais: _hotelDetail!.idPais,
+            idEstado: _hotelDetail!.idEstado,
+            numeroEstrellas: _hotelDetail!.numeroEstrellas,
+            urlFotoPerfil: nuevaUrlFoto,
+          );
+        }
+        
+        // Recargar detalle para obtener datos actualizados del backend
+        try {
+          await loadHotelDetail(hotelId);
+          print('DEBUG: Detalle de hotel recargado después de subir foto');
+        } catch (e) {
+          print('DEBUG: Error al recargar detalle después de subir foto: $e');
+        }
+      }
+
+      _isUploadingPhoto = false;
+      notifyListeners();
+
+      print("Foto de hotel subida correctamente");
+      print('Status code: ${response.statusCode}');
+      return true;
+    } catch (e) {
+      _isUploadingPhoto = false;
+
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          if (responseData is Map && responseData['detail'] != null) {
+            _uploadPhotoError = responseData['detail'] as String;
+          } else {
+            _uploadPhotoError = 'Error ${e.response?.statusCode}: ${e.response?.data}';
+          }
+          print('Error del servidor al subir foto: ${e.response?.data}');
+        } else {
+          _uploadPhotoError = 'Error de conexión: ${e.message ?? e.toString()}';
+          print('Error de conexión al subir foto: ${e.message}');
+        }
+      } else {
+        _uploadPhotoError = 'Error: ${e.toString()}';
+        print('Error general al subir foto: $e');
+      }
+
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Eliminar/restaurar foto de hotel por defecto
+  Future<bool> eliminarFotoHotel(int hotelId) async {
+    _isDeletingPhoto = true;
+    _uploadPhotoError = null;
+    notifyListeners();
+
+    try {
+      final response = await _hotelService.eliminarFotoHotel(hotelId);
+
+      // Recargar detalle para obtener la foto por defecto
+      await loadHotelDetail(hotelId);
+
+      _isDeletingPhoto = false;
+      notifyListeners();
+
+      print("Foto de hotel eliminada/restaurada correctamente");
+      print('Status code: ${response.statusCode}');
+      return true;
+    } catch (e) {
+      _isDeletingPhoto = false;
+
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          if (responseData is Map && responseData['detail'] != null) {
+            _uploadPhotoError = responseData['detail'] as String;
+          } else {
+            _uploadPhotoError = 'Error ${e.response?.statusCode}: ${e.response?.data}';
+          }
+          print('Error del servidor al eliminar foto: ${e.response?.data}');
+        } else {
+          _uploadPhotoError = 'Error de conexión: ${e.message ?? e.toString()}';
+          print('Error de conexión al eliminar foto: ${e.message}');
+        }
+      } else {
+        _uploadPhotoError = 'Error: ${e.toString()}';
+        print('Error general al eliminar foto: $e');
       }
 
       notifyListeners();
