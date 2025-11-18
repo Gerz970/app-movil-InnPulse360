@@ -15,7 +15,10 @@ class PisoController extends ChangeNotifier {
   String? error;
 
   Future<void> cargarPisosPorHotel(BuildContext context) async {
-    final hotelController = Provider.of<HotelController>(context, listen: false);
+    final hotelController = Provider.of<HotelController>(
+      context,
+      listen: false,
+    );
 
     if (hotelController.hotelSeleccionado == null) return;
 
@@ -64,10 +67,68 @@ class PisoController extends ChangeNotifier {
           final statusCode = e.response?.statusCode;
 
           // Error 401 - No autenticado
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
-              error = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
+            error =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print('Error de autenticación al crear piso: ${e.response?.data}');
+          }
+          // Error 422 - Validación
+          else if (statusCode == 422) {
+            error = 'Error de validación: ${e.response?.data}';
+            print('Error de validación al crear piso: ${e.response?.data}');
+          }
+          // Otro error del servidor
+          else {
+            error = 'Error ${statusCode}: ${e.response?.data}';
+            print('Error del servidor al crear piso: ${e.response?.data}');
+          }
+        } else {
+          // Error de conexión
+          error = 'Error de conexión: ${e.message ?? e.toString()}';
+          print('Error de conexión al crear piso: ${e.message}');
+        }
+      } else {
+        // Otro tipo de error
+        error = 'Error: ${e.toString()}';
+        print('Error general al crear piso: $e');
+      }
+
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> actualizarPiso(Piso piso) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      final response = await _service.updatePiso(piso.idPiso, piso);
+
+      isLoading = false;
+      notifyListeners();
+
+      print("Piso actualizado: $response");
+
+      return true;
+    } catch (e) {
+      isLoading = false;
+
+      // Manejar errores
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          final statusCode = e.response?.statusCode;
+
+          // Error 401 - No autenticado
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
+            error =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
             print('Error de autenticación al crear piso: ${e.response?.data}');
           }
           // Error 422 - Validación

@@ -1,3 +1,4 @@
+import 'package:app_movil_innpulse/features/pisos/piso_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_header.dart';
@@ -20,7 +21,10 @@ class _PisosListScreenState extends State<PisosListScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final pisoController = Provider.of<PisoController>(context, listen: false);
+      final pisoController = Provider.of<PisoController>(
+        context,
+        listen: false,
+      );
       pisoController.cargarPisosPorHotel(context);
     });
   }
@@ -32,7 +36,10 @@ class _PisosListScreenState extends State<PisosListScreen> {
       drawer: const AppSidebar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const PisoCreateScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PisoCreateScreen()),
+          );
         },
         backgroundColor: const Color(0xFF667eea),
         foregroundColor: Colors.white,
@@ -121,10 +128,7 @@ class _PisosListScreenState extends State<PisosListScreen> {
           const SizedBox(height: 24),
           const Text(
             'Aún no hay pisos registrados para este hotel',
-            style: TextStyle(
-              fontSize: 18,
-              color: Color(0xFF6b7280),
-            ),
+            style: TextStyle(fontSize: 18, color: Color(0xFF6b7280)),
           ),
         ],
       ),
@@ -151,13 +155,16 @@ class _PisosListScreenState extends State<PisosListScreen> {
   Widget _buildPisoCard(Piso piso) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {}, // puedes abrir detalle si lo deseas
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PisoEditScreen(piso: piso)),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -199,7 +206,7 @@ class _PisosListScreenState extends State<PisosListScreen> {
                     const SizedBox(height: 4),
                     Text(
                       "${piso.descripcion}",
-                        style: const TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6b7280),
                       ),

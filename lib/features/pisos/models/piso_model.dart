@@ -25,6 +25,18 @@ class Piso {
       idEstatus: json['estatus_id']
     );
   }
+
+   Map<String, dynamic> toJson() {
+    return {
+      "id_piso": idPiso,
+      "id_hotel": idHotel,
+      "numero_pisos": nivel,
+      "nombre": nombre,
+      "descripcion": descripcion,
+      "estatus_id": idEstatus,
+      "nivel": nivel,
+    };
+  }
 }
 
 class PisoCreateModel {

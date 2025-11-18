@@ -93,14 +93,28 @@ class PisoService {
     }
     
 
-  // Future<Piso> updatePiso(int idPiso, PisoUpdateModel model) async {
-  //   final response = await _dio.put(
-  //     "$baseUrl/pisos/$idPiso",
-  //     data: model.toJson(),
-  //   );
+  Future<Piso> updatePiso(int idPiso, Piso model) async {
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
 
-  //   return Piso.fromJson(response.data);
-  // }
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    final response = await _dio.put(
+      baseUrl + EndpointsPiso.detail(idPiso),
+      data: model.toJson(),
+      options: Options(headers: headers)
+    );  
+    return Piso.fromJson(response.data);
+  }
 
   // Future<bool> deletePiso(int idPiso) async {
   //   await _dio.delete("$baseUrl/pisos/$idPiso");
