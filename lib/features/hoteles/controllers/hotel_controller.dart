@@ -120,10 +120,7 @@ class HotelController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
 
-      // 5.- imprimir en consola la respuesta
-      print("Hoteles obtenidos correctamente");
-      print('Status code: ${response.statusCode}');
-      print('Total de hoteles: ${_hotels.length}');
+      // 5.- Hoteles obtenidos correctamente
     } catch (e) {
       // 6. Desactivar loading
       _isLoading = false;
@@ -139,21 +136,17 @@ class HotelController extends ChangeNotifier {
               responseData['detail'] == 'Not authenticated') {
             _isNotAuthenticated = true;
             _errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación: ${e.response?.data}');
           } else {
             // Otro error del servidor
             _errorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
-            print('Error del servidor: ${e.response?.data}');
           }
         } else {
           // Error de conexión (sin respuesta del servidor)
           _errorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión: ${e.message}');
         }
       } else {
         // Otro tipo de error (no es DioException)
         _errorMessage = 'Error: ${e.toString()}';
-        print('Error general: $e');
       }
 
       // Notificar cambio de estado
@@ -197,22 +190,18 @@ class HotelController extends ChangeNotifier {
       _isLoadingCatalogs = false;
       notifyListeners();
 
-      print("Catálogos cargados correctamente");
-      print('Total de países: ${_paises.length}');
+      // Catálogos cargados correctamente
     } catch (e) {
       _isLoadingCatalogs = false;
 
       if (e is DioException) {
         if (e.response != null) {
           _errorMessage = 'Error al cargar catálogos: ${e.response?.statusCode}';
-          print('Error del servidor al cargar catálogos: ${e.response?.data}');
         } else {
           _errorMessage = 'Error de conexión al cargar catálogos: ${e.message ?? e.toString()}';
-          print('Error de conexión al cargar catálogos: ${e.message}');
         }
       } else {
         _errorMessage = 'Error al cargar catálogos: ${e.toString()}';
-        print('Error general al cargar catálogos: $e');
       }
 
       notifyListeners();
@@ -255,19 +244,15 @@ class HotelController extends ChangeNotifier {
       }
 
       notifyListeners();
-      print("Estados cargados correctamente para país $idPais");
-      print('Total de estados: ${_estados.length}');
+      // Estados cargados correctamente
     } catch (e) {
       _estados = [];
 
       if (e is DioException) {
         if (e.response != null) {
-          print('Error del servidor al cargar estados: ${e.response?.data}');
         } else {
-          print('Error de conexión al cargar estados: ${e.message}');
         }
       } else {
-        print('Error general al cargar estados: $e');
       }
 
       notifyListeners();
@@ -287,18 +272,15 @@ class HotelController extends ChangeNotifier {
       }
 
       notifyListeners();
-      print("País cargado correctamente: ${_paisDetail?.nombre}");
+      // País cargado correctamente
     } catch (e) {
       _paisDetail = null;
 
       if (e is DioException) {
         if (e.response != null) {
-          print('Error del servidor al cargar país: ${e.response?.data}');
         } else {
-          print('Error de conexión al cargar país: ${e.message}');
         }
       } else {
-        print('Error general al cargar país: $e');
       }
 
       notifyListeners();
@@ -318,18 +300,15 @@ class HotelController extends ChangeNotifier {
       }
 
       notifyListeners();
-      print("Estado cargado correctamente: ${_estadoDetail?.nombre}");
+      // Estado cargado correctamente
     } catch (e) {
       _estadoDetail = null;
 
       if (e is DioException) {
         if (e.response != null) {
-          print('Error del servidor al cargar estado: ${e.response?.data}');
         } else {
-          print('Error de conexión al cargar estado: ${e.message}');
         }
       } else {
-        print('Error general al cargar estado: $e');
       }
 
       notifyListeners();
@@ -345,15 +324,13 @@ class HotelController extends ChangeNotifier {
 
     try {
       // Crear hotel mediante el servicio
-      final response = await _hotelService.createHotel(hotelData);
+      await _hotelService.createHotel(hotelData);
 
       // Si éxito, refrescar la lista de hoteles
       _isCreating = false;
       notifyListeners();
 
-      print("Hotel creado correctamente");
-      print('Status code: ${response.statusCode}');
-      print(response.data);
+      // Hotel creado correctamente
 
       // Refrescar lista de hoteles
       await fetchHotels();
@@ -374,27 +351,22 @@ class HotelController extends ChangeNotifier {
                responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
             _createErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al crear hotel: ${e.response?.data}');
           }
           // Error 422 - Validación
           else if (statusCode == 422) {
             _createErrorMessage = 'Error de validación: ${e.response?.data}';
-            print('Error de validación al crear hotel: ${e.response?.data}');
           }
           // Otro error del servidor
           else {
             _createErrorMessage = 'Error ${statusCode}: ${e.response?.data}';
-            print('Error del servidor al crear hotel: ${e.response?.data}');
           }
         } else {
           // Error de conexión
           _createErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al crear hotel: ${e.message}');
         }
       } else {
         // Otro tipo de error
         _createErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al crear hotel: $e');
       }
 
       notifyListeners();
@@ -424,8 +396,7 @@ class HotelController extends ChangeNotifier {
       _isLoadingDetail = false;
       notifyListeners();
 
-      print("Detalle de hotel obtenido correctamente");
-      print('Status code: ${response.statusCode}');
+      // Detalle de hotel obtenido correctamente
     } catch (e) {
       _isLoadingDetail = false;
 
@@ -441,22 +412,18 @@ class HotelController extends ChangeNotifier {
                responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
             _detailErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al cargar detalle: ${e.response?.data}');
           }
           // Otro error del servidor
           else {
             _detailErrorMessage = 'Error ${statusCode}: ${e.response?.data}';
-            print('Error del servidor al cargar detalle: ${e.response?.data}');
           }
         } else {
           // Error de conexión
           _detailErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al cargar detalle: ${e.message}');
         }
       } else {
         // Otro tipo de error
         _detailErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al cargar detalle: $e');
       }
 
       notifyListeners();
@@ -482,12 +449,12 @@ class HotelController extends ChangeNotifier {
         _hotelDetail = Hotel(
           idHotel: _hotelDetail!.idHotel,
           nombre: hotelData['nombre'] as String? ?? _hotelDetail!.nombre,
-          direccion: _hotelDetail!.direccion,
-          codigoPostal: _hotelDetail!.codigoPostal,
+          direccion: hotelData['direccion'] as String? ?? _hotelDetail!.direccion,
+          codigoPostal: hotelData['codigo_postal'] as String? ?? _hotelDetail!.codigoPostal,
           telefono: hotelData['telefono'] as String? ?? _hotelDetail!.telefono,
           emailContacto: _hotelDetail!.emailContacto,
-          idPais: _hotelDetail!.idPais,
-          idEstado: _hotelDetail!.idEstado,
+          idPais: hotelData['id_pais'] as int? ?? _hotelDetail!.idPais,
+          idEstado: hotelData['id_estado'] as int? ?? _hotelDetail!.idEstado,
           numeroEstrellas: hotelData['numero_estrellas'] as int? ?? _hotelDetail!.numeroEstrellas,
           urlFotoPerfil: _hotelDetail!.urlFotoPerfil,
         );
@@ -496,9 +463,7 @@ class HotelController extends ChangeNotifier {
       _isUpdating = false;
       notifyListeners();
 
-      print("Hotel actualizado correctamente");
-      print('Status code: ${response.statusCode}');
-      print(response.data);
+      // Hotel actualizado correctamente
 
       return true;
     } catch (e) {
@@ -516,27 +481,22 @@ class HotelController extends ChangeNotifier {
                responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
             _updateErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al actualizar hotel: ${e.response?.data}');
           }
           // Error 422 - Validación
           else if (statusCode == 422) {
             _updateErrorMessage = 'Error de validación: ${e.response?.data}';
-            print('Error de validación al actualizar hotel: ${e.response?.data}');
           }
           // Otro error del servidor
           else {
             _updateErrorMessage = 'Error ${statusCode}: ${e.response?.data}';
-            print('Error del servidor al actualizar hotel: ${e.response?.data}');
           }
         } else {
           // Error de conexión
           _updateErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al actualizar hotel: ${e.message}');
         }
       } else {
         // Otro tipo de error
         _updateErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al actualizar hotel: $e');
       }
 
       notifyListeners();
@@ -565,8 +525,7 @@ class HotelController extends ChangeNotifier {
         _isDeleting = false;
         notifyListeners();
 
-        print("Hotel eliminado correctamente");
-        print('Status code: ${response.statusCode}');
+        // Hotel eliminado correctamente
 
         return true;
       } else {
@@ -590,32 +549,26 @@ class HotelController extends ChangeNotifier {
                responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
             _deleteErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al eliminar hotel: ${e.response?.data}');
           }
           // Error 404 - No existe
           else if (statusCode == 404) {
             _deleteErrorMessage = 'El hotel ya no existe.';
-            print('Error 404 al eliminar hotel: ${e.response?.data}');
           }
           // Error 409/422 - Dependencias activas
           else if (statusCode == 409 || statusCode == 422) {
             _deleteErrorMessage = 'No es posible eliminar el hotel por dependencias activas.';
-            print('Error de dependencias al eliminar hotel: ${e.response?.data}');
           }
           // Otro error del servidor (500+)
           else {
             _deleteErrorMessage = 'Error del servidor: ${e.response?.data ?? statusCode}';
-            print('Error del servidor al eliminar hotel: ${e.response?.data}');
           }
         } else {
           // Error de conexión
           _deleteErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al eliminar hotel: ${e.message}');
         }
       } else {
         // Otro tipo de error
         _deleteErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al eliminar hotel: $e');
       }
 
       notifyListeners();
@@ -656,17 +609,14 @@ class HotelController extends ChangeNotifier {
         // Recargar detalle para obtener datos actualizados del backend
         try {
           await loadHotelDetail(hotelId);
-          print('DEBUG: Detalle de hotel recargado después de subir foto');
         } catch (e) {
-          print('DEBUG: Error al recargar detalle después de subir foto: $e');
         }
       }
 
       _isUploadingPhoto = false;
       notifyListeners();
 
-      print("Foto de hotel subida correctamente");
-      print('Status code: ${response.statusCode}');
+      // Foto de hotel subida correctamente
       return true;
     } catch (e) {
       _isUploadingPhoto = false;
@@ -679,14 +629,11 @@ class HotelController extends ChangeNotifier {
           } else {
             _uploadPhotoError = 'Error ${e.response?.statusCode}: ${e.response?.data}';
           }
-          print('Error del servidor al subir foto: ${e.response?.data}');
         } else {
           _uploadPhotoError = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al subir foto: ${e.message}');
         }
       } else {
         _uploadPhotoError = 'Error: ${e.toString()}';
-        print('Error general al subir foto: $e');
       }
 
       notifyListeners();
@@ -701,7 +648,7 @@ class HotelController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _hotelService.eliminarFotoHotel(hotelId);
+      await _hotelService.eliminarFotoHotel(hotelId);
 
       // Recargar detalle para obtener la foto por defecto
       await loadHotelDetail(hotelId);
@@ -709,8 +656,7 @@ class HotelController extends ChangeNotifier {
       _isDeletingPhoto = false;
       notifyListeners();
 
-      print("Foto de hotel eliminada/restaurada correctamente");
-      print('Status code: ${response.statusCode}');
+      // Foto de hotel eliminada/restaurada correctamente
       return true;
     } catch (e) {
       _isDeletingPhoto = false;
@@ -723,14 +669,11 @@ class HotelController extends ChangeNotifier {
           } else {
             _uploadPhotoError = 'Error ${e.response?.statusCode}: ${e.response?.data}';
           }
-          print('Error del servidor al eliminar foto: ${e.response?.data}');
         } else {
           _uploadPhotoError = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al eliminar foto: ${e.message}');
         }
       } else {
         _uploadPhotoError = 'Error: ${e.toString()}';
-        print('Error general al eliminar foto: $e');
       }
 
       notifyListeners();
@@ -759,8 +702,7 @@ class HotelController extends ChangeNotifier {
       _isLoadingGaleria = false;
       notifyListeners();
 
-      print("Galería cargada correctamente");
-      print('Total de imágenes: $_totalImagenesGaleria');
+      // Galería cargada correctamente
     } catch (e) {
       _isLoadingGaleria = false;
 
@@ -772,14 +714,11 @@ class HotelController extends ChangeNotifier {
           } else {
             _galeriaErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
           }
-          print('Error del servidor al cargar galería: ${e.response?.data}');
         } else {
           _galeriaErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al cargar galería: ${e.message}');
         }
       } else {
         _galeriaErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al cargar galería: $e');
       }
 
       _galeriaImagenes = [];
@@ -803,7 +742,7 @@ class HotelController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _hotelService.subirImagenGaleria(hotelId, fileBytes, fileName);
+      await _hotelService.subirImagenGaleria(hotelId, fileBytes, fileName);
 
       // Recargar galería después de subir para obtener la lista actualizada
       await cargarGaleria(hotelId);
@@ -811,8 +750,7 @@ class HotelController extends ChangeNotifier {
       _isUploadingGaleria = false;
       notifyListeners();
 
-      print("Imagen de galería subida correctamente");
-      print('Status code: ${response.statusCode}');
+      // Imagen de galería subida correctamente
       return true;
     } catch (e) {
       _isUploadingGaleria = false;
@@ -825,14 +763,11 @@ class HotelController extends ChangeNotifier {
           } else {
             _galeriaErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
           }
-          print('Error del servidor al subir imagen a galería: ${e.response?.data}');
         } else {
           _galeriaErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al subir imagen a galería: ${e.message}');
         }
       } else {
         _galeriaErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al subir imagen a galería: $e');
       }
 
       notifyListeners();
@@ -846,15 +781,14 @@ class HotelController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _hotelService.eliminarImagenGaleria(hotelId, nombreArchivo);
+      await _hotelService.eliminarImagenGaleria(hotelId, nombreArchivo);
 
       // Recargar galería después de eliminar para obtener la lista actualizada
       await cargarGaleria(hotelId);
 
       notifyListeners();
 
-      print("Imagen de galería eliminada correctamente");
-      print('Status code: ${response.statusCode}');
+      // Imagen de galería eliminada correctamente
       return true;
     } catch (e) {
       if (e is DioException) {
@@ -865,14 +799,11 @@ class HotelController extends ChangeNotifier {
           } else {
             _galeriaErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
           }
-          print('Error del servidor al eliminar imagen de galería: ${e.response?.data}');
         } else {
           _galeriaErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión al eliminar imagen de galería: ${e.message}');
         }
       } else {
         _galeriaErrorMessage = 'Error: ${e.toString()}';
-        print('Error general al eliminar imagen de galería: $e');
       }
 
       notifyListeners();

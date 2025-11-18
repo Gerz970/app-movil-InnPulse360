@@ -395,7 +395,7 @@ class _IncidenciaGaleriaScreenState extends State<IncidenciaGaleriaScreen> {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+        crossAxisCount: 4,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 1,

@@ -37,7 +37,6 @@ class HotelService {
       
       return token is String ? token : null;
     } catch (e) {
-      print('Error al obtener token: $e');
       return null;
     }
   }
@@ -100,9 +99,6 @@ class HotelService {
 
     // Construir la URL con query parameters
     final url = baseUrl + EndpointsHotels.paises;
-    
-    print('🔍 Intentando cargar países desde: $url');
-    print('🔑 Token disponible: ${token.substring(0, 20)}...');
 
     // Configurar headers con el token de autenticación
     final headers = {
@@ -126,25 +122,8 @@ class HotelService {
         ),
       );
 
-      print('✅ Países cargados exitosamente. Status: ${response.statusCode}');
       return response; // Respuesta del API
     } catch (e) {
-      // Log detallado del error
-      if (e is DioException) {
-        print('❌ Error al cargar países:');
-        print('   Tipo: ${e.type}');
-        print('   Mensaje: ${e.message}');
-        print('   URL: ${e.requestOptions.uri}');
-        print('   Headers: ${e.requestOptions.headers}');
-        if (e.response != null) {
-          print('   Status Code: ${e.response?.statusCode}');
-          print('   Response Data: ${e.response?.data}');
-        } else {
-          print('   Sin respuesta del servidor (error de red)');
-        }
-      } else {
-        print('❌ Error desconocido al cargar países: $e');
-      }
       // Manejo de errores
       rethrow;
     }
@@ -223,11 +202,15 @@ class HotelService {
       'Authorization': 'Bearer $token',
     };
 
-    // Hacer la petición GET
+    // Hacer la petición GET con timeout extendido para peticiones secundarias
     try {
       final response = await _dio.get(
         url,
-        options: Options(headers: headers),
+        options: Options(
+          headers: headers,
+          receiveTimeout: Duration(seconds: 60), // Timeout extendido para peticiones secundarias
+          sendTimeout: Duration(seconds: 60),
+        ),
       );
 
       return response; // Respuesta del API
@@ -260,11 +243,15 @@ class HotelService {
       'Authorization': 'Bearer $token',
     };
 
-    // Hacer la petición GET
+    // Hacer la petición GET con timeout extendido para peticiones secundarias
     try {
       final response = await _dio.get(
         url,
-        options: Options(headers: headers),
+        options: Options(
+          headers: headers,
+          receiveTimeout: Duration(seconds: 60), // Timeout extendido para peticiones secundarias
+          sendTimeout: Duration(seconds: 60),
+        ),
       );
 
       return response; // Respuesta del API
@@ -352,7 +339,7 @@ class HotelService {
   /// Método para actualizar un hotel
   /// Requiere token de autenticación en el header
   /// Parámetros: hotelId del hotel a actualizar y Map con los datos a actualizar
-  /// Solo se pueden actualizar: nombre, numero_estrellas, telefono
+  /// Se pueden actualizar: nombre, direccion, codigo_postal, id_pais, id_estado, telefono, numero_estrellas
   Future<Response> updateHotel(int hotelId, Map<String, dynamic> hotelData) async {
     // Obtener token de la sesión
     final token = await _getToken();

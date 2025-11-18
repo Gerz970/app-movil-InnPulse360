@@ -720,7 +720,7 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+              crossAxisCount: 4,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               childAspectRatio: 1,
