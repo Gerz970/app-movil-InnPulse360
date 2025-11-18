@@ -132,35 +132,6 @@ class AppSidebar extends StatelessWidget {
       modulos = loginResponse['modulos'] as List;
     }
 
-    // Obtener roles del usuario
-    List<dynamic> roles = [];
-    if (loginResponse != null && loginResponse['roles'] is List) {
-      roles = loginResponse['roles'] as List;
-    }
-
-    // Filtrar módulos si el usuario tiene rol "Cliente"
-    bool tieneRolCliente = false;
-    for (var rol in roles) {
-      if (rol is Map<String, dynamic>) {
-        final nombreRol = rol['rol'] as String? ?? '';
-        if (nombreRol.toLowerCase() == 'cliente') {
-          tieneRolCliente = true;
-          break;
-        }
-      }
-    }
-
-    // Si tiene rol Cliente, solo mostrar módulo "Reservaciones"
-    if (tieneRolCliente) {
-      modulos = modulos.where((modulo) {
-        if (modulo is Map<String, dynamic>) {
-          final nombreModulo = modulo['nombre'] as String? ?? '';
-          return nombreModulo.toLowerCase().contains('reservacion');
-        }
-        return false;
-      }).toList();
-    }
-
     // Si no hay módulos, mostrar mensaje
     if (modulos.isEmpty) {
       return const Center(

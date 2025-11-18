@@ -13,4 +13,7 @@ class EndpointsAuth {
   
   //[POST]: registro de usuario-cliente
   static const String registroCliente = "usuarios/registro-cliente";
+  
+  //[POST]: recuperar contraseña
+  static const String recuperarPassword = "usuarios/recuperar-password";
 }

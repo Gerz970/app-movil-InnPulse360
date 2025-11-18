@@ -82,21 +82,58 @@ class AuthController extends ChangeNotifier
       // 7. Desactivar loading
       _isLoading = false;
       
-      // 8. Manejar errores (sin verificar response, porque no existe aquí)
+      // 8. Manejar errores de forma profesional y sutil
       if (e is DioException) {
         // Verificar si hay respuesta del servidor
         if (e.response != null) {
-          // El servidor respondió con un código de error (401, 404, 500, etc.)
-          _errorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
-          print('Error del servidor: ${e.response?.data}');
+          final statusCode = e.response?.statusCode;
+          final errorData = e.response?.data;
+          
+          // Manejar errores 401 (credenciales incorrectas) de forma sutil
+          if (statusCode == 401) {
+            // Intentar extraer mensaje del JSON si está disponible
+            if (errorData is Map<String, dynamic>) {
+              final detail = errorData['detail'];
+              if (detail is String && detail.isNotEmpty) {
+                // Si el mensaje contiene "credenciales" o "incorrectas", usar mensaje genérico
+                if (detail.toLowerCase().contains('credenciales') || 
+                    detail.toLowerCase().contains('incorrectas') ||
+                    detail.toLowerCase().contains('invalid')) {
+                  _errorMessage = 'Usuario o contraseña incorrectos';
+                } else {
+                  _errorMessage = detail;
+                }
+              } else {
+                _errorMessage = 'Usuario o contraseña incorrectos';
+              }
+            } else {
+              _errorMessage = 'Usuario o contraseña incorrectos';
+            }
+          } else {
+            // Otros errores del servidor - intentar extraer mensaje amigable
+            if (errorData is Map<String, dynamic>) {
+              final detail = errorData['detail'];
+              if (detail is String && detail.isNotEmpty) {
+                _errorMessage = detail;
+              } else {
+                _errorMessage = 'Error al iniciar sesión. Por favor, intenta nuevamente';
+              }
+            } else if (errorData is String && errorData.isNotEmpty) {
+              _errorMessage = errorData;
+            } else {
+              _errorMessage = 'Error al iniciar sesión. Por favor, intenta nuevamente';
+            }
+          }
+          
+          print('Error del servidor (${statusCode}): ${errorData}');
         } else {
           // Error de conexión (sin respuesta del servidor)
-          _errorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          _errorMessage = 'Error de conexión. Verifica tu internet e intenta nuevamente';
           print('Error de conexión: ${e.message}');
         }
       } else {
         // Otro tipo de error (no es DioException)
-        _errorMessage = 'Error: ${e.toString()}';
+        _errorMessage = 'Error inesperado. Por favor, intenta nuevamente';
         print('Error general: $e');
       }
       
@@ -303,12 +340,10 @@ class AuthController extends ChangeNotifier
         } else {
           // Error de conexión
           _registroErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
-          print('Error de conexión: ${e.message}');
         }
       } else {
         // Otro tipo de error
         _registroErrorMessage = 'Error: ${e.toString()}';
-        print('Error general: $e');
       }
 
       // Notificar cambio de estado

@@ -110,12 +110,32 @@ class AuthService {
 
       return response; // Respuesta del API
     } catch (e) {
-      // Log del error para debugging
-      if (e is DioException && e.response != null) {
-        print('Error en petición de registro:');
-        print('Status: ${e.response?.statusCode}');
-        print('Data: ${e.response?.data}');
-      }
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para recuperar contraseña
+  /// No requiere autenticación
+  /// Parámetro: correo electrónico
+  Future<Response> recuperarPassword(String correoElectronico) async {
+    // Construir la URL del endpoint
+    final url = baseUrl + EndpointsAuth.recuperarPassword;
+
+    // Construir el body de la petición
+    final data = {
+      'correo_electronico': correoElectronico.trim(),
+    };
+
+    // Hacer la petición POST sin autenticación
+    try {
+      final response = await _dio.post(
+        url,
+        data: data,
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
       // Manejo de errores
       rethrow;
     }
