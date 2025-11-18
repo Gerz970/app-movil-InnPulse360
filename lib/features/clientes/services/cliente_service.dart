@@ -122,6 +122,34 @@ class ClienteService {
     }
   }
 
+  /// Método público para crear un nuevo cliente (sin autenticación)
+  /// Usado durante el proceso de registro
+  /// Parámetro: Map con los datos del cliente
+  Future<Response> createClientePublico(Map<String, dynamic> clienteData) async {
+    // Construir la URL usando el endpoint público
+    final url = baseUrl + EndpointsClientes.createPublico;
+
+    // Configurar headers sin autenticación
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición POST
+    try {
+      final response = await _dio.post(
+        url,
+        data: clienteData,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
   /// Método para obtener el detalle de un cliente
   /// Requiere token de autenticación en el header
   /// Parámetro: clienteId del cliente a obtener
@@ -398,6 +426,85 @@ class ClienteService {
     try {
       final response = await _dio.get(
         url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  // ===== Métodos públicos (sin autenticación) para registro =====
+
+  /// Método público para obtener el catálogo de países
+  /// NO requiere token de autenticación
+  /// Parámetros opcionales: skip y limit para paginación
+  Future<Response> fetchPaisesPublicos({int skip = 0, int limit = 100}) async {
+    // Construir la URL con query parameters
+    final url = baseUrl + EndpointsHotels.paises;
+
+    // Configurar headers sin autenticación
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.get(
+        url,
+        queryParameters: {
+          'skip': skip,
+          'limit': limit,
+        },
+        options: Options(
+          headers: headers,
+          followRedirects: true,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método público para obtener el catálogo de estados
+  /// NO requiere token de autenticación
+  /// Parámetros opcionales: skip y limit para paginación, idPais para filtrar por país
+  Future<Response> fetchEstadosPublicos({int skip = 0, int limit = 100, int? idPais}) async {
+    // Construir la URL según si se proporciona idPais
+    final String url;
+    final Map<String, dynamic> queryParams;
+
+    if (idPais != null) {
+      // Usar endpoint específico para estados por país
+      url = baseUrl + "estados/pais/$idPais";
+      queryParams = {}; // Este endpoint no acepta query parameters
+    } else {
+      // Usar endpoint general de estados con paginación
+      url = baseUrl + EndpointsHotels.estados;
+      queryParams = {
+        'skip': skip,
+        'limit': limit,
+      };
+    }
+
+    // Configurar headers sin autenticación
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.get(
+        url,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
         options: Options(headers: headers),
       );
 

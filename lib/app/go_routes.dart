@@ -8,6 +8,7 @@ import 'package:app_movil_innpulse/features/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import '../features/login/login_screen.dart';
 import '../features/login/register_screen.dart';
+import '../features/perfil/screens/perfil_screen.dart';
 
 
 class RouteItem {
@@ -46,5 +47,11 @@ final List<RouteItem> routes = [
     ruta: '/home', // ruta de la pantalla
     screen: HomeScreen(), // clase de la screen
     permisos: ['*'] //permisos de la pantalla, * significa que es publica
+  ),
+  RouteItem(
+    nombre: 'PerfilScreen', //nombre de la ruta
+    ruta: '/perfil', // ruta de la pantalla
+    screen: const PerfilScreen(), // clase de la screen
+    permisos: ['*'] //permisos de la pantalla, * significa que requiere autenticación
   )
 ];

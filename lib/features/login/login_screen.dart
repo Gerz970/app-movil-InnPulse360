@@ -2,6 +2,8 @@ import 'package:flutter/material.dart'; //Es para uso de componentes visuales
 import 'package:provider/provider.dart'; // es para escuchar cambios y actualizar UI
 import '../../../core/auth/controllers/auth_controller.dart'; //controller de esta interfaz
 import '../home/home_screen.dart'; // pantalla de inicio
+import 'register_screen.dart'; // pantalla de registro
+import 'forgot_password_screen.dart'; // pantalla de recuperar contraseña
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -225,14 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Función de recuperar contraseña no implementada'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        },
+        onPressed: _navigateToForgotPassword,
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           minimumSize: Size.zero,
@@ -328,23 +323,31 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context, authController, child) {
         if (authController.errorMessage != null && authController.errorMessage!.isNotEmpty) {
           return Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: const Color(0xFFFEF2F2).withOpacity(0.6),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200),
+              border: Border.all(
+                color: const Color(0xFFFCA5A5).withOpacity(0.4),
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                Icon(
+                  Icons.info_outline,
+                  color: const Color(0xFFDC2626).withOpacity(0.7),
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     authController.errorMessage!,
                     style: TextStyle(
-                      color: Colors.red.shade700,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF991B1B).withOpacity(0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
@@ -400,11 +403,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToRegister() {
-    // Esta funcionalidad tiene como objetivo navegar a la pantalla de registro de usuario
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Función de registro no implementada'),
-        backgroundColor: Colors.orange,
+    // Navegar a la pantalla de registro de usuario
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const RegisterScreen(),
+      ),
+    );
+  }
+
+  void _navigateToForgotPassword() {
+    // Navegar a la pantalla de recuperar contraseña
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ForgotPasswordScreen(),
       ),
     );
   }

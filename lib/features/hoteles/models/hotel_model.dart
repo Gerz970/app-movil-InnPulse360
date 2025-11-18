@@ -14,6 +14,7 @@ class Hotel {
   final int? idPais;
   final int? idEstado;
   final int numeroEstrellas;
+  final String? urlFotoPerfil;
 
   // Constructor con valores por defecto para null-safety
   Hotel({
@@ -26,6 +27,7 @@ class Hotel {
     this.idPais,
     this.idEstado,
     required this.numeroEstrellas,
+    this.urlFotoPerfil,
   });
 
   // Método para deserializar desde JSON
@@ -40,6 +42,7 @@ class Hotel {
       idPais: json['id_pais'] as int?,
       idEstado: json['id_estado'] as int?,
       numeroEstrellas: json['numero_estrellas'] as int? ?? 0,
+      urlFotoPerfil: json['url_foto_perfil'] as String?,
     );
   }
 }

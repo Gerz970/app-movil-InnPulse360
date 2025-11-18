@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
@@ -9,7 +10,8 @@ import '../login/login_screen.dart';
 
 /// Pantalla de detalle y edición de cliente
 /// Muestra formulario en modo edición con campos precargados
-/// Solo permite editar: nombre_razon_social, telefono, direccion, id_estatus
+/// Permite editar todos los campos excepto correo electrónico
+/// El estatus siempre se mantiene como activo (id_estatus = 1)
 class ClienteDetailScreen extends StatefulWidget {
   final int clienteId;
 
@@ -40,7 +42,6 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
   // Valores seleccionados
   Pais? _paisSeleccionado;
   Estado? _estadoSeleccionado;
-  int _idEstatus = 1;
   int _tipoPersona = 1;
   
   bool _isInitialized = false;
@@ -48,16 +49,24 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Cargar detalle del cliente y país/estado específicos al iniciar
+    // Cargar detalle del cliente y catálogos completos al iniciar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = Provider.of<ClienteController>(context, listen: false);
+      // Cargar catálogos completos para permitir edición
+      controller.loadCatalogs();
       // Cargar detalle del cliente primero
       controller.loadClienteDetail(widget.clienteId).then((_) {
-        // Una vez cargado el detalle, cargar país y estado específicos si existen
+        // Una vez cargado el detalle, precargar país y estado si existen
         final cliente = controller.clienteDetail;
         if (cliente != null) {
           if (cliente.paisId != null) {
-            controller.loadPaisById(cliente.paisId!);
+            // Cargar país específico para precargar valor
+            controller.loadPaisById(cliente.paisId!).then((_) {
+              // Si el país es México, cargar estados
+              if (controller.paisDetail != null && _esMexico(controller.paisDetail)) {
+                controller.loadEstadosByPais(cliente.paisId!);
+              }
+            });
           }
           if (cliente.estadoId != null) {
             controller.loadEstadoById(cliente.estadoId!);
@@ -65,6 +74,23 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         }
       });
     });
+  }
+
+  /// Verificar si un país es México
+  bool _esMexico(Pais? pais) {
+    if (pais == null) return false;
+    // Comparar sin importar mayúsculas/minúsculas y con/sin acento
+    final nombreNormalizado = pais.nombre.toLowerCase().trim();
+    // Normalizar acentos: méxico -> mexico
+    final nombreSinAcentos = nombreNormalizado
+        .replaceAll('é', 'e')
+        .replaceAll('É', 'e')
+        .replaceAll('ó', 'o')
+        .replaceAll('Ó', 'o');
+    
+    return nombreNormalizado == 'méxico' || 
+           nombreNormalizado == 'mexico' ||
+           nombreSinAcentos == 'mexico';
   }
 
   @override
@@ -88,8 +114,6 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     
     final cliente = controller.clienteDetail!;
     
-    print('🔍 Precargando datos del cliente: ${cliente.nombreRazonSocial}');
-    
     // Precargar valores en controladores
     _nombreRazonSocialController.text = cliente.nombreRazonSocial;
     _apellidoPaternoController.text = cliente.apellidoPaterno ?? '';
@@ -99,21 +123,42 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     _correoController.text = cliente.correoElectronico ?? '';
     _telefonoController.text = cliente.telefono ?? '';
     _direccionController.text = cliente.direccion ?? '';
-    _documentoController.text = cliente.documentoIdentificacion?.toString() ?? '';
+    _documentoController.text = cliente.documentoIdentificacion ?? '';
     _representanteController.text = cliente.representante ?? '';
-    _idEstatus = cliente.idEstatus;
     _tipoPersona = cliente.tipoPersona;
     
-    // Precargar país usando paisDetail (cargado por endpoint específico)
-    if (controller.paisDetail != null) {
-      _paisSeleccionado = controller.paisDetail;
-      print('✅ País cargado: ${controller.paisDetail!.nombre}');
+    // Precargar país: buscar en la lista de países cargados por ID
+    // IMPORTANTE: Solo usar países que estén en la lista para evitar errores del dropdown
+    if (controller.paisDetail != null && controller.paises.isNotEmpty) {
+      try {
+        _paisSeleccionado = controller.paises.firstWhere(
+          (pais) => pais.idPais == controller.paisDetail!.idPais,
+        );
+      } catch (e) {
+        // Si no se encuentra en la lista, dejar null (se actualizará cuando se carguen los países)
+        _paisSeleccionado = null;
+      }
+    } else if (controller.paisDetail != null) {
+      // Si aún no se han cargado los países, dejar null temporalmente
+      // Se actualizará cuando se carguen los catálogos
+      _paisSeleccionado = null;
     }
     
-    // Precargar estado usando estadoDetail (cargado por endpoint específico)
-    if (controller.estadoDetail != null) {
-      _estadoSeleccionado = controller.estadoDetail;
-      print('✅ Estado cargado: ${controller.estadoDetail!.nombre}');
+    // Precargar estado: buscar en la lista de estados cargados por ID
+    // IMPORTANTE: Solo usar estados que estén en la lista para evitar errores del dropdown
+    if (controller.estadoDetail != null && controller.estados.isNotEmpty) {
+      try {
+        _estadoSeleccionado = controller.estados.firstWhere(
+          (estado) => estado.idEstado == controller.estadoDetail!.idEstado,
+        );
+      } catch (e) {
+        // Si no se encuentra en la lista, dejar null (se actualizará cuando se carguen los estados)
+        _estadoSeleccionado = null;
+      }
+    } else if (controller.estadoDetail != null) {
+      // Si aún no se han cargado los estados, dejar null temporalmente
+      // Se actualizará cuando se carguen los estados (si el país es México)
+      _estadoSeleccionado = null;
     }
     
     // Marcar como inicializado
@@ -175,28 +220,66 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                     });
                   }
                   
-                  // Si el país o estado se cargan después, actualizar los dropdowns
+                  // Si los catálogos se cargan después, actualizar los dropdowns
                   if (_isInitialized && controller.clienteDetail != null) {
-                    // Actualizar país si se carga después
-                    if (controller.paisDetail != null && _paisSeleccionado?.idPais != controller.paisDetail!.idPais) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            _paisSeleccionado = controller.paisDetail;
+                    // Actualizar país si los catálogos se cargan después
+                    if (controller.paises.isNotEmpty && controller.paisDetail != null) {
+                      try {
+                        final paisEncontrado = controller.paises.firstWhere(
+                          (pais) => pais.idPais == controller.paisDetail!.idPais,
+                        );
+                        if (_paisSeleccionado?.idPais != paisEncontrado.idPais) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() {
+                                _paisSeleccionado = paisEncontrado;
+                              });
+                            }
                           });
                         }
-                      });
+                      } catch (e) {
+                        // Si no se encuentra en la lista, dejar null para evitar el error del dropdown
+                        // El dropdown mostrará el hint y el usuario podrá seleccionar manualmente
+                        if (_paisSeleccionado != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() {
+                                _paisSeleccionado = null;
+                              });
+                            }
+                          });
+                        }
+                      }
                     }
                     
                     // Actualizar estado si se carga después
-                    if (controller.estadoDetail != null && _estadoSeleccionado?.idEstado != controller.estadoDetail!.idEstado) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            _estadoSeleccionado = controller.estadoDetail;
+                    if (controller.estados.isNotEmpty && controller.estadoDetail != null) {
+                      try {
+                        final estadoEncontrado = controller.estados.firstWhere(
+                          (estado) => estado.idEstado == controller.estadoDetail!.idEstado,
+                        );
+                        if (_estadoSeleccionado?.idEstado != estadoEncontrado.idEstado) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() {
+                                _estadoSeleccionado = estadoEncontrado;
+                              });
+                            }
                           });
                         }
-                      });
+                      } catch (e) {
+                        // Si no se encuentra en la lista, dejar null para evitar el error del dropdown
+                        // El dropdown mostrará el hint y el usuario podrá seleccionar manualmente
+                        if (_estadoSeleccionado != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() {
+                                _estadoSeleccionado = null;
+                              });
+                            }
+                          });
+                        }
+                      }
                     }
                   }
 
@@ -420,68 +503,135 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                 _buildTextField(
                   controller: _nombreRazonSocialController,
                   label: _tipoPersona == 1 ? 'Nombre(s)' : 'Razón social',
-                  hint: 'Ingresa el nombre',
+                  hint: _tipoPersona == 1 ? 'Ingresa el nombre' : 'Ingresa la razón social',
                   icon: Icons.person,
                   enabled: true,
                   validator: (value) {
                     if (value == null || value.isEmpty || value.trim().isEmpty) {
                       return _tipoPersona == 1 ? 'El nombre es requerido' : 'La razón social es requerida';
                     }
-                    if (value.trim().length < 3) {
-                      return 'Debe tener al menos 3 caracteres';
+                    final trimmed = value.trim();
+                    if (trimmed.length < 1) {
+                      return 'Debe tener al menos 1 carácter';
+                    }
+                    if (trimmed.length > 250) {
+                      return 'No puede tener más de 250 caracteres';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
-                // Campos específicos de Persona Física (READ-ONLY)
+                // Campos específicos de Persona Física (EDITABLES)
                 if (_tipoPersona == 1) ...[
                   _buildTextField(
                     controller: _apellidoPaternoController,
                     label: 'Apellido paterno',
-                    hint: 'Apellido paterno',
+                    hint: 'Ingresa el apellido paterno',
                     icon: Icons.person_outline,
-                    enabled: false,
+                    enabled: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty || value.trim().isEmpty) {
+                        return 'El apellido paterno es requerido';
+                      }
+                      final trimmed = value.trim();
+                      if (trimmed.length > 250) {
+                        return 'No puede tener más de 250 caracteres';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                   _buildTextField(
                     controller: _apellidoMaternoController,
                     label: 'Apellido materno',
-                    hint: 'Apellido materno',
+                    hint: 'Ingresa el apellido materno',
                     icon: Icons.person_outline,
-                    enabled: false,
+                    enabled: true,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final trimmed = value.trim();
+                        if (trimmed.length > 250) {
+                          return 'No puede tener más de 250 caracteres';
+                        }
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                   _buildTextField(
                     controller: _curpController,
                     label: 'CURP',
-                    hint: 'CURP',
+                    hint: 'Ingresa el CURP (18 caracteres)',
                     icon: Icons.credit_card,
-                    enabled: false,
+                    enabled: true,
+                    maxLength: 18,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final curp = value.trim().toUpperCase();
+                        if (curp.length != 18) {
+                          return 'El CURP debe tener exactamente 18 caracteres';
+                        }
+                        // Validar formato CURP: ^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$
+                        final curpRegex = RegExp(r'^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$');
+                        if (!curpRegex.hasMatch(curp)) {
+                          return 'Formato de CURP inválido. Ejemplo: ABCD123456HMABCD1';
+                        }
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                 ],
-                // Campo específico de Persona Moral (READ-ONLY)
+                // Campo específico de Persona Moral (EDITABLE)
                 if (_tipoPersona == 2) ...[
                   _buildTextField(
                     controller: _representanteController,
                     label: 'Representante',
-                    hint: 'Representante',
+                    hint: 'Ingresa el nombre del representante',
                     icon: Icons.account_circle,
-                    enabled: false,
+                    enabled: true,
+                    maxLength: 100,
+                    validator: (value) {
+                      if (value == null || value.isEmpty || value.trim().isEmpty) {
+                        return 'El representante es requerido';
+                      }
+                      final trimmed = value.trim();
+                      if (trimmed.length < 1) {
+                        return 'Debe tener al menos 1 carácter';
+                      }
+                      if (trimmed.length > 100) {
+                        return 'No puede tener más de 100 caracteres';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                 ],
-                // Campo: RFC (READ-ONLY)
+                // Campo: RFC (EDITABLE)
                 _buildTextField(
                   controller: _rfcController,
                   label: 'RFC',
-                  hint: 'RFC',
+                  hint: 'Ingresa el RFC (12-13 caracteres)',
                   icon: Icons.assignment_ind,
-                  enabled: false,
+                  enabled: true,
+                  maxLength: 13,
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final rfc = value.trim().toUpperCase();
+                      if (rfc.length < 12 || rfc.length > 13) {
+                        return 'El RFC debe tener 12 o 13 caracteres';
+                      }
+                      // Validar formato RFC: ^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$
+                      final rfcRegex = RegExp(r'^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$');
+                      if (!rfcRegex.hasMatch(rfc)) {
+                        return 'Formato de RFC inválido. Ejemplo: ABC123456XYZ';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
-                // Campo: Correo electrónico (READ-ONLY)
+                // Campo: Correo electrónico (READ-ONLY - no se puede editar)
                 _buildTextField(
                   controller: _correoController,
                   label: 'Correo electrónico',
@@ -494,19 +644,50 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                 _buildTextField(
                   controller: _telefonoController,
                   label: 'Teléfono',
-                  hint: 'Ingresa el teléfono',
+                  hint: 'Ingresa el teléfono (10 dígitos)',
                   icon: Icons.phone,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
                   enabled: true,
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final telefono = value.trim();
+                      if (telefono.length != 10) {
+                        return 'El teléfono debe tener exactamente 10 dígitos';
+                      }
+                      // Validar que solo contenga dígitos
+                      if (!RegExp(r'^\d+$').hasMatch(telefono)) {
+                        return 'El teléfono debe contener solo dígitos';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
-                // Campo: Documento de identificación (READ-ONLY)
+                // Campo: Documento de identificación (EDITABLE)
                 _buildTextField(
                   controller: _documentoController,
                   label: 'Documento de identificación',
-                  hint: 'Documento',
+                  hint: 'Ingresa el número de documento',
                   icon: Icons.badge,
-                  enabled: false,
+                  keyboardType: TextInputType.number,
+                  enabled: true,
+                  maxLength: 50,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty || value.trim().isEmpty) {
+                      return 'El documento de identificación es requerido';
+                    }
+                    if (value.trim().length > 50) {
+                      return 'El documento no puede exceder 50 caracteres';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
                 // Campo: Dirección (EDITABLE)
@@ -517,16 +698,22 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   icon: Icons.location_on,
                   maxLines: 2,
                   enabled: true,
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final trimmed = value.trim();
+                      if (trimmed.length > 100) {
+                        return 'La dirección no puede tener más de 100 caracteres';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
-                // Dropdown: País (READ-ONLY)
+                // Dropdown: País (EDITABLE)
                 _buildPaisDropdown(controller),
                 const SizedBox(height: 20),
-                // Dropdown: Estado (READ-ONLY)
+                // Dropdown: Estado (EDITABLE - solo disponible para México)
                 _buildEstadoDropdown(controller),
-                const SizedBox(height: 20),
-                // Dropdown: Estatus (EDITABLE)
-                _buildEstatusDropdown(enabled: true),
                 const SizedBox(height: 32),
                 // Botones
                 Row(
@@ -654,13 +841,30 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     String? Function(String?)? validator,
     required bool enabled,
     int maxLines = 1,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
       validator: validator,
       enabled: enabled,
+      textCapitalization: label.contains('CURP') || label.contains('RFC') 
+          ? TextCapitalization.characters 
+          : TextCapitalization.none,
+      onChanged: (value) {
+        // Convertir a mayúsculas para RFC y CURP
+        if (label.contains('RFC') || label.contains('CURP')) {
+          final cursorPosition = controller.selection.start;
+          controller.value = TextEditingValue(
+            text: value.toUpperCase(),
+            selection: TextSelection.collapsed(offset: cursorPosition),
+          );
+        }
+      },
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -711,19 +915,49 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
           color: Color(0xFF9ca3af),
           fontSize: 14,
         ),
+        // Ocultar contador de caracteres si maxLength está definido
+        counterText: maxLength != null ? '' : null,
       ),
     );
   }
 
-  /// Widget para dropdown de países (READ-ONLY en detalle)
+  /// Widget para dropdown de países (EDITABLE)
   Widget _buildPaisDropdown(ClienteController controller) {
-    final paisValue = controller.paisDetail ?? _paisSeleccionado;
-    final paisesList = paisValue != null ? [paisValue] : <Pais>[];
+    // Si hay un país seleccionado, verificar que esté en la lista
+    Pais? paisValue = _paisSeleccionado;
+    
+    // Verificar que el país seleccionado esté en la lista de países cargados
+    if (paisValue != null && controller.paises.isNotEmpty) {
+      final existeEnLista = controller.paises.any((pais) => pais.idPais == paisValue!.idPais);
+      if (!existeEnLista) {
+        // Si el país seleccionado no está en la lista, buscar por ID
+        try {
+          paisValue = controller.paises.firstWhere(
+            (pais) => pais.idPais == paisValue!.idPais,
+          );
+        } catch (e) {
+          // Si no se encuentra, usar null para evitar el error
+          paisValue = null;
+        }
+      }
+    }
+    
+    // Si no hay país seleccionado pero hay detalle, buscar en la lista
+    if (paisValue == null && controller.paisDetail != null && controller.paises.isNotEmpty) {
+      try {
+        paisValue = controller.paises.firstWhere(
+          (pais) => pais.idPais == controller.paisDetail!.idPais,
+        );
+      } catch (e) {
+        // Si no se encuentra en la lista, usar null (mostrará el hint)
+        paisValue = null;
+      }
+    }
     
     return DropdownButtonFormField<Pais>(
       value: paisValue,
       decoration: InputDecoration(
-        labelText: 'País',
+        labelText: 'País *',
         prefixIcon: const Icon(
           Icons.public,
           color: Color(0xFF6b7280),
@@ -732,8 +966,22 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFFe5e7eb),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFF667eea),
+            width: 2,
+          ),
+        ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
@@ -743,24 +991,143 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
           fontSize: 14,
         ),
       ),
-      items: paisesList.map((pais) {
+      items: controller.paises.map((pais) {
         return DropdownMenuItem<Pais>(
           value: pais,
           child: Text(pais.nombre),
         );
       }).toList(),
-      onChanged: null, // Deshabilitado
+      onChanged: (Pais? pais) {
+        setState(() {
+          _paisSeleccionado = pais;
+          _estadoSeleccionado = null;
+          if (pais != null) {
+            // Solo cargar estados si el país es México
+            if (_esMexico(pais)) {
+              controller.loadEstadosByPais(pais.idPais);
+            }
+            // Si no es México, los estados simplemente no se cargarán
+            // y el dropdown se deshabilitará automáticamente
+          }
+        });
+      },
+      validator: (value) {
+        if (value == null) {
+          return 'El país es requerido';
+        }
+        return null;
+      },
     );
   }
 
-  /// Widget para dropdown de estados (READ-ONLY en detalle)
+  /// Widget para dropdown de estados (EDITABLE)
   Widget _buildEstadoDropdown(ClienteController controller) {
-    final estadoValue = controller.estadoDetail ?? _estadoSeleccionado;
-    final estadosList = estadoValue != null ? [estadoValue] : <Estado>[];
+    // Solo mostrar/habilitar el dropdown si el país seleccionado es México
+    final esMexico = _esMexico(_paisSeleccionado ?? controller.paisDetail);
+    
+    // Si no es México o la lista está vacía, el valor debe ser null
+    if (!esMexico || controller.estados.isEmpty) {
+      return DropdownButtonFormField<Estado>(
+        value: null, // Forzar null si no es México o no hay estados
+        hint: Text(esMexico ? 'Selecciona un estado' : 'Solo disponible para México'),
+        decoration: InputDecoration(
+          labelText: 'Estado',
+          prefixIcon: const Icon(
+            Icons.map,
+            color: Color(0xFF6b7280),
+            size: 20,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFe5e7eb),
+              width: 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFF667eea),
+              width: 2,
+            ),
+          ),
+          filled: true,
+          fillColor: esMexico ? Colors.white : Colors.grey.shade100,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          labelStyle: TextStyle(
+            color: esMexico ? const Color(0xFF6b7280) : Colors.grey.shade400,
+            fontSize: 14,
+          ),
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
+            fontSize: 14,
+          ),
+        ),
+        items: controller.estados.map((estado) {
+          return DropdownMenuItem<Estado>(
+            value: estado,
+            child: Text(estado.nombre),
+          );
+        }).toList(),
+        onChanged: esMexico && controller.estados.isNotEmpty
+            ? (Estado? estado) {
+                setState(() {
+                  _estadoSeleccionado = estado;
+                });
+              }
+            : null,
+        validator: (value) {
+          // Estado es opcional, no requiere validación
+          return null;
+        },
+      );
+    }
+    
+    // Si hay un estado seleccionado, verificar que esté en la lista
+    Estado? estadoValue = _estadoSeleccionado;
+    
+    // Verificar que el estado seleccionado esté en la lista de estados cargados
+    if (estadoValue != null) {
+      final existeEnLista = controller.estados.any((estado) => estado.idEstado == estadoValue!.idEstado);
+      if (!existeEnLista) {
+        // Si el estado seleccionado no está en la lista, buscar por ID
+        try {
+          estadoValue = controller.estados.firstWhere(
+            (estado) => estado.idEstado == estadoValue!.idEstado,
+          );
+        } catch (e) {
+          // Si no se encuentra, usar null para evitar el error
+          estadoValue = null;
+        }
+      } else {
+        // Si existe, obtener el objeto exacto de la lista (no el de _estadoSeleccionado)
+        estadoValue = controller.estados.firstWhere(
+          (estado) => estado.idEstado == estadoValue!.idEstado,
+        );
+      }
+    }
+    
+    // Si no hay estado seleccionado pero hay detalle, buscar en la lista
+    if (estadoValue == null && controller.estadoDetail != null) {
+      try {
+        estadoValue = controller.estados.firstWhere(
+          (estado) => estado.idEstado == controller.estadoDetail!.idEstado,
+        );
+      } catch (e) {
+        // Si no se encuentra en la lista, usar null (mostrará el hint)
+        estadoValue = null;
+      }
+    }
     
     return DropdownButtonFormField<Estado>(
-      value: estadoValue,
-      hint: const Text('Sin estado'),
+      value: estadoValue, // Este valor ahora está garantizado que está en la lista
+      hint: Text(esMexico ? 'Selecciona un estado' : 'Solo disponible para México'),
       decoration: InputDecoration(
         labelText: 'Estado',
         prefixIcon: const Icon(
@@ -771,85 +1138,55 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFFe5e7eb),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFF667eea),
+            width: 2,
+          ),
+        ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: esMexico ? Colors.white : Colors.grey.shade100,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
+        labelStyle: TextStyle(
+          color: esMexico ? const Color(0xFF6b7280) : Colors.grey.shade400,
+          fontSize: 14,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
           fontSize: 14,
         ),
       ),
-      items: estadosList.map((estado) {
+      items: controller.estados.map((estado) {
         return DropdownMenuItem<Estado>(
           value: estado,
           child: Text(estado.nombre),
         );
       }).toList(),
-      onChanged: null, // Deshabilitado
+      onChanged: esMexico && controller.estados.isNotEmpty
+          ? (Estado? estado) {
+              setState(() {
+                _estadoSeleccionado = estado;
+              });
+            }
+          : null,
+      validator: (value) {
+        // Estado es opcional, no requiere validación
+        return null;
+      },
     );
   }
 
-  /// Widget para dropdown de estatus
-  Widget _buildEstatusDropdown({required bool enabled}) {
-    return DropdownButtonFormField<int>(
-      value: _idEstatus,
-      decoration: InputDecoration(
-        labelText: 'Estatus',
-        prefixIcon: const Icon(
-          Icons.check_circle,
-          color: Color(0xFF6b7280),
-          size: 20,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-        fillColor: enabled ? Colors.white : Colors.grey.shade50,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
-          fontSize: 14,
-        ),
-      ),
-      items: const [
-        DropdownMenuItem<int>(
-          value: 1,
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, size: 18, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Activo'),
-            ],
-          ),
-        ),
-        DropdownMenuItem<int>(
-          value: 0,
-          child: Row(
-            children: [
-              Icon(Icons.cancel, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Inactivo'),
-            ],
-          ),
-        ),
-      ],
-      onChanged: enabled
-          ? (int? value) {
-              if (value != null) {
-                setState(() {
-                  _idEstatus = value;
-                });
-              }
-            }
-          : null,
-    );
-  }
 
   /// Método para manejar el envío del formulario
   Future<void> _handleSubmit(BuildContext context, ClienteController controller) async {
@@ -858,22 +1195,72 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
       return;
     }
 
-    // Construir Map solo con campos editables
-    final clienteData = <String, dynamic>{
-      'nombre_razon_social': _nombreRazonSocialController.text.trim(),
-      'id_estatus': _idEstatus,
-    };
-
-    // Agregar teléfono si tiene valor
-    final telefono = _telefonoController.text.trim();
-    if (telefono.isNotEmpty) {
-      clienteData['telefono'] = telefono;
+    // Validar país (requerido)
+    if (_paisSeleccionado == null && controller.paisDetail == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona un país'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
-    // Agregar dirección si tiene valor
+    // Construir Map con todos los campos editables
+    final clienteData = <String, dynamic>{
+      'nombre_razon_social': _nombreRazonSocialController.text.trim(),
+      'id_estatus': 1, // Siempre activo
+      'rfc': _rfcController.text.trim().toUpperCase(),
+    };
+
+    // Agregar campos específicos de Persona Física
+    if (_tipoPersona == 1) {
+      clienteData['apellido_paterno'] = _apellidoPaternoController.text.trim();
+      
+      final apellidoMaterno = _apellidoMaternoController.text.trim();
+      if (apellidoMaterno.isNotEmpty) {
+        clienteData['apellido_materno'] = apellidoMaterno;
+      }
+      
+      final curp = _curpController.text.trim();
+      if (curp.isNotEmpty) {
+        clienteData['curp'] = curp.toUpperCase();
+      }
+    }
+
+    // Agregar campo específico de Persona Moral
+    if (_tipoPersona == 2) {
+      clienteData['representante'] = _representanteController.text.trim();
+    }
+
+    // Agregar campos opcionales
+    // Teléfono: solo numérico pero tratado como texto
+    final telefono = _telefonoController.text.trim();
+    if (telefono.isNotEmpty) {
+      clienteData['telefono'] = telefono; // Se envía como String aunque solo contenga dígitos
+    }
+
     final direccion = _direccionController.text.trim();
     if (direccion.isNotEmpty) {
       clienteData['direccion'] = direccion;
+    }
+
+    // Documento: solo numérico pero tratado como texto
+    final documento = _documentoController.text.trim();
+    if (documento.isNotEmpty) {
+      clienteData['documento_identificacion'] = documento; // Se envía como String aunque solo contenga dígitos
+    }
+
+    // Agregar país (usar seleccionado o el del detalle)
+    final paisId = _paisSeleccionado?.idPais ?? controller.paisDetail?.idPais;
+    if (paisId != null) {
+      clienteData['pais_id'] = paisId;
+    }
+
+    // Agregar estado_id solo si está seleccionado (opcional)
+    final estadoId = _estadoSeleccionado?.idEstado ?? controller.estadoDetail?.idEstado;
+    if (estadoId != null) {
+      clienteData['estado_id'] = estadoId;
     }
 
     // Actualizar cliente
@@ -1048,7 +1435,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         try {
           Navigator.of(context, rootNavigator: true).pop();
         } catch (e) {
-          print('Error al cerrar diálogo: $e');
+          // Error al cerrar diálogo, ignorar silenciosamente
         }
       }
 
@@ -1104,7 +1491,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         try {
           Navigator.of(context, rootNavigator: true).pop();
         } catch (err) {
-          print('Error al cerrar diálogo en catch: $err');
+          // Error al cerrar diálogo, ignorar silenciosamente
         }
       }
     }

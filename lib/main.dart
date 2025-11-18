@@ -7,6 +7,7 @@ import 'core/sidebar/sidebar_controller.dart';
 import 'features/hoteles/controllers/hotel_controller.dart';
 import 'features/clientes/controllers/cliente_controller.dart';
 import 'features/incidencias/controllers/incidencia_controller.dart';
+import 'features/perfil/controllers/perfil_controller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ClienteController()),
         ChangeNotifierProvider(create: (_) => IncidenciaController()),
         ChangeNotifierProvider(create: (_) => PisoController()),
+        ChangeNotifierProvider(create: (_) => PerfilController()),
 
       ],
       child: MaterialApp(

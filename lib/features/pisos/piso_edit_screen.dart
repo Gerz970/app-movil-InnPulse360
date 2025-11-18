@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
-import '../login/login_screen.dart';
 import 'controllers/piso_controller.dart';
 import 'models/piso_model.dart';
 
@@ -25,8 +24,6 @@ class _PisoEditScreenState extends State<PisoEditScreen> {
   late TextEditingController _nivelController;
   late TextEditingController _nombreController;
   late TextEditingController _descripcionController;
-
-  bool _isInitialized = false;
 
   @override
   void initState() {

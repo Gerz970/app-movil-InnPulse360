@@ -8,6 +8,9 @@ class EndpointsClientes {
   //[GET]: listado de clientes
   static const String list = "clientes/";
   
+  //[POST]: crear cliente público (sin autenticación)
+  static const String createPublico = "clientes/publico";
+  
   // Método helper para construir endpoint de detalle de cliente
   static String detail(int clienteId) => "clientes/$clienteId";
 }

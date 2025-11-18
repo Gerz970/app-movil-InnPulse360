@@ -60,22 +60,26 @@ class _PisoCreateScreenState extends State<PisoCreateScreen> {
       idEstatus: 1,
     );
 
-    final result = await _pisoService.createPiso(piso);
+    try {
+      await _pisoService.createPiso(piso);
 
-    setState(() => _isSaving = false);
+      setState(() => _isSaving = false);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Piso registrado correctamente')),
       );
       Navigator.pop(context);
       final pisoController = Provider.of<PisoController>(context, listen: false);
       await pisoController.cargarPisosPorHotel(context);
-    } else {
+    } catch (e) {
+      setState(() => _isSaving = false);
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al registrar el piso')),
+        SnackBar(content: Text('Error al registrar el piso: ${e.toString()}')),
       );
     }
   }

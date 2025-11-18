@@ -37,7 +37,6 @@ class HotelService {
       
       return token is String ? token : null;
     } catch (e) {
-      print('Error al obtener token: $e');
       return null;
     }
   }
@@ -100,9 +99,6 @@ class HotelService {
 
     // Construir la URL con query parameters
     final url = baseUrl + EndpointsHotels.paises;
-    
-    print('🔍 Intentando cargar países desde: $url');
-    print('🔑 Token disponible: ${token.substring(0, 20)}...');
 
     // Configurar headers con el token de autenticación
     final headers = {
@@ -126,25 +122,8 @@ class HotelService {
         ),
       );
 
-      print('✅ Países cargados exitosamente. Status: ${response.statusCode}');
       return response; // Respuesta del API
     } catch (e) {
-      // Log detallado del error
-      if (e is DioException) {
-        print('❌ Error al cargar países:');
-        print('   Tipo: ${e.type}');
-        print('   Mensaje: ${e.message}');
-        print('   URL: ${e.requestOptions.uri}');
-        print('   Headers: ${e.requestOptions.headers}');
-        if (e.response != null) {
-          print('   Status Code: ${e.response?.statusCode}');
-          print('   Response Data: ${e.response?.data}');
-        } else {
-          print('   Sin respuesta del servidor (error de red)');
-        }
-      } else {
-        print('❌ Error desconocido al cargar países: $e');
-      }
       // Manejo de errores
       rethrow;
     }
@@ -223,11 +202,15 @@ class HotelService {
       'Authorization': 'Bearer $token',
     };
 
-    // Hacer la petición GET
+    // Hacer la petición GET con timeout extendido para peticiones secundarias
     try {
       final response = await _dio.get(
         url,
-        options: Options(headers: headers),
+        options: Options(
+          headers: headers,
+          receiveTimeout: Duration(seconds: 60), // Timeout extendido para peticiones secundarias
+          sendTimeout: Duration(seconds: 60),
+        ),
       );
 
       return response; // Respuesta del API
@@ -260,11 +243,15 @@ class HotelService {
       'Authorization': 'Bearer $token',
     };
 
-    // Hacer la petición GET
+    // Hacer la petición GET con timeout extendido para peticiones secundarias
     try {
       final response = await _dio.get(
         url,
-        options: Options(headers: headers),
+        options: Options(
+          headers: headers,
+          receiveTimeout: Duration(seconds: 60), // Timeout extendido para peticiones secundarias
+          sendTimeout: Duration(seconds: 60),
+        ),
       );
 
       return response; // Respuesta del API
@@ -352,7 +339,7 @@ class HotelService {
   /// Método para actualizar un hotel
   /// Requiere token de autenticación en el header
   /// Parámetros: hotelId del hotel a actualizar y Map con los datos a actualizar
-  /// Solo se pueden actualizar: nombre, numero_estrellas, telefono
+  /// Se pueden actualizar: nombre, direccion, codigo_postal, id_pais, id_estado, telefono, numero_estrellas
   Future<Response> updateHotel(int hotelId, Map<String, dynamic> hotelData) async {
     // Obtener token de la sesión
     final token = await _getToken();
@@ -405,6 +392,223 @@ class HotelService {
 
     // Construir la URL
     final url = baseUrl + EndpointsHotels.detail(hotelId);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición DELETE
+    try {
+      final response = await _dio.delete(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para subir una foto de hotel
+  /// Requiere token de autenticación en el header
+  /// Tipo de cuerpo: multipart/form-data
+  /// Parámetros: idHotel, fileBytes (bytes del archivo) y fileName (nombre del archivo)
+  Future<Response> subirFotoHotel(int idHotel, List<int> fileBytes, String fileName) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.actualizarFotoHotel(idHotel);
+
+    // Obtener la extensión del archivo
+    final extension = fileName.split('.').last;
+    final finalFileName = 'hotel_${idHotel}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+    // Crear FormData con el archivo usando bytes (compatible con todas las plataformas)
+    FormData formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        fileBytes,
+        filename: finalFileName,
+      ),
+    });
+
+    // Configurar headers con el token de autenticación
+    // No incluir Content-Type para multipart, Dio lo maneja automáticamente
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición PUT con multipart
+    try {
+      final response = await _dio.put(
+        url,
+        data: formData,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para eliminar/restaurar foto de hotel por defecto
+  /// Requiere token de autenticación en el header
+  /// Parámetro: idHotel del hotel
+  Future<Response> eliminarFotoHotel(int idHotel) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.eliminarFotoHotel(idHotel);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición DELETE
+    try {
+      final response = await _dio.delete(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para subir una imagen a la galería del hotel
+  /// Requiere token de autenticación en el header
+  /// Tipo de cuerpo: multipart/form-data
+  /// Parámetros: idHotel, fileBytes (bytes del archivo) y fileName (nombre del archivo)
+  Future<Response> subirImagenGaleria(int idHotel, List<int> fileBytes, String fileName) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.subirImagenGaleria(idHotel);
+
+    // Obtener la extensión del archivo
+    final extension = fileName.split('.').last;
+    final finalFileName = 'galeria_${idHotel}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+    // Crear FormData con el archivo usando bytes (compatible con todas las plataformas)
+    FormData formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        fileBytes,
+        filename: finalFileName,
+      ),
+    });
+
+    // Configurar headers con el token de autenticación
+    // No incluir Content-Type para multipart, Dio lo maneja automáticamente
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición POST con multipart
+    try {
+      final response = await _dio.post(
+        url,
+        data: formData,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para listar las imágenes de la galería del hotel
+  /// Requiere token de autenticación en el header
+  /// Parámetro: idHotel del hotel
+  Future<Response> listarGaleria(int idHotel) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.listarGaleria(idHotel);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para eliminar una imagen de la galería del hotel
+  /// Requiere token de autenticación en el header
+  /// Parámetros: idHotel del hotel y nombreArchivo de la imagen a eliminar
+  Future<Response> eliminarImagenGaleria(int idHotel, String nombreArchivo) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsHotels.eliminarImagenGaleria(idHotel, nombreArchivo);
 
     // Configurar headers con el token de autenticación
     final headers = {

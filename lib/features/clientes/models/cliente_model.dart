@@ -14,7 +14,7 @@ class Cliente {
   final String? correoElectronico;
   final String? telefono;
   final String? direccion;
-  final int? documentoIdentificacion;
+  final String? documentoIdentificacion;
   final int? paisId;
   final int? estadoId;
   final int idEstatus; // 1 = Activo, 0 = Inactivo
@@ -52,7 +52,7 @@ class Cliente {
       correoElectronico: json['correo_electronico'] as String?,
       telefono: json['telefono'] as String?,
       direccion: json['direccion'] as String?,
-      documentoIdentificacion: json['documento_identificacion'] as int?,
+      documentoIdentificacion: json['documento_identificacion'] as String?,
       paisId: json['pais_id'] as int?,
       estadoId: json['estado_id'] as int?,
       idEstatus: json['id_estatus'] as int? ?? 1,

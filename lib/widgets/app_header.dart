@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
+import '../features/perfil/screens/perfil_screen.dart';
 
 /// Widget de header global reutilizable para toda la aplicación
 /// Muestra información del usuario, foto de perfil y botones de acción
@@ -93,24 +94,8 @@ class AppHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Foto de perfil circular con icono temporal
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF667eea).withOpacity(0.1),
-                  border: Border.all(
-                    color: const Color(0xFF667eea).withOpacity(0.2),
-                    width: 2,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Color(0xFF667eea),
-                  size: 28,
-                ),
-              ),
+              // Foto de perfil circular - construida directamente desde loginResponse
+              _buildAvatarFromSession(loginResponse),
               const SizedBox(width: 12),
               // Nombre del usuario y texto secundario
               Expanded(
@@ -229,13 +214,36 @@ class AppHeader extends StatelessWidget {
                     ),
                   ],
                   onSelected: (String value) {
-                    // Sin funcionalidad por ahora, solo muestra opciones de ejemplo
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Opción seleccionada: $value'),
-                        backgroundColor: const Color(0xFF667eea),
-                      ),
-                    );
+                    if (value == 'perfil') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PerfilScreen(),
+                        ),
+                      );
+                    } else if (value == 'configuracion') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Configuración en desarrollo'),
+                          backgroundColor: Color(0xFF667eea),
+                        ),
+                      );
+                    } else if (value == 'ayuda') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ayuda en desarrollo'),
+                          backgroundColor: Color(0xFF667eea),
+                        ),
+                      );
+                    } else if (value == 'cerrar_sesion') {
+                      // Funcionalidad de cerrar sesión ya está en la pantalla de perfil
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PerfilScreen(),
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -243,6 +251,94 @@ class AppHeader extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Construir el avatar directamente desde loginResponse
+  /// Se ejecuta cada vez que el Consumer se reconstruye
+  Widget _buildAvatarFromSession(Map<String, dynamic>? loginResponse) {
+    // Intentar obtener foto de perfil desde la sesión
+    String? fotoUrl;
+    if (loginResponse != null) {
+      // Intentar desde objeto usuario
+      if (loginResponse['usuario'] is Map<String, dynamic>) {
+        fotoUrl = loginResponse['usuario']['url_foto_perfil'] as String?;
+      }
+      // Intentar desde raíz
+      if (fotoUrl == null) {
+        fotoUrl = loginResponse['url_foto_perfil'] as String?;
+      }
+    }
+    
+    // Obtener timestamp de actualización de la sesión para evitar caché
+    int? timestampFoto = loginResponse?['usuario']?['foto_perfil_timestamp'] as int?;
+    if (timestampFoto == null) {
+      timestampFoto = loginResponse?['foto_perfil_timestamp'] as int?;
+    }
+    
+    // Agregar timestamp a la URL para evitar caché cuando se actualiza la foto
+    String? fotoUrlConCache = fotoUrl;
+    if (fotoUrl != null && fotoUrl.isNotEmpty) {
+      // Agregar parámetro de query único basado en el timestamp guardado
+      final separator = fotoUrl.contains('?') ? '&' : '?';
+      final cacheBuster = timestampFoto ?? DateTime.now().millisecondsSinceEpoch;
+      fotoUrlConCache = '$fotoUrl${separator}t=$cacheBuster';
+      print('DEBUG Header: Mostrando foto de perfil: $fotoUrl (timestamp: $cacheBuster)');
+    } else {
+      print('DEBUG Header: No hay foto de perfil disponible');
+    }
+    
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFF667eea).withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: fotoUrlConCache != null && fotoUrlConCache.isNotEmpty
+            ? Image.network(
+                fotoUrlConCache,
+                key: ValueKey('${fotoUrl}_$timestampFoto'), // Key única que incluye URL y timestamp
+                fit: BoxFit.cover,
+                cacheWidth: 96, // Optimización: cachear a tamaño específico
+                cacheHeight: 96,
+                errorBuilder: (context, error, stackTrace) {
+                  print('DEBUG Header: Error al cargar imagen: $error');
+                  return Container(
+                    color: const Color(0xFF667eea).withOpacity(0.1),
+                    child: const Icon(
+                      Icons.person,
+                      color: Color(0xFF667eea),
+                      size: 28,
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: const Color(0xFF667eea).withOpacity(0.1),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Container(
+                color: const Color(0xFF667eea).withOpacity(0.1),
+                child: const Icon(
+                  Icons.person,
+                  color: Color(0xFF667eea),
+                  size: 28,
+                ),
+              ),
+      ),
     );
   }
 }
