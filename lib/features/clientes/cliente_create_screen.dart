@@ -33,8 +33,8 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
   
   // Valores seleccionados
   int _tipoPersona = 1; // 1 = Física, 2 = Moral (default Física)
-  Pais? _paisSeleccionado;
-  Estado? _estadoSeleccionado;
+  int? _paisIdSeleccionado;
+  int? _estadoIdSeleccionado;
   int _idEstatus = 1; // 1 = Activo (default)
 
   @override
@@ -556,8 +556,21 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
 
   /// Widget para dropdown de países
   Widget _buildPaisDropdown(ClienteController controller) {
+    // Buscar el objeto Pais correspondiente al ID seleccionado
+    Pais? paisValue;
+    if (_paisIdSeleccionado != null && controller.paises.isNotEmpty) {
+      try {
+        paisValue = controller.paises.firstWhere(
+          (pais) => pais.idPais == _paisIdSeleccionado,
+        );
+      } catch (e) {
+        // Si no se encuentra, usar null
+        paisValue = null;
+      }
+    }
+
     return DropdownButtonFormField<Pais>(
-      value: _paisSeleccionado,
+      value: paisValue,
       decoration: InputDecoration(
         labelText: 'País',
         prefixIcon: const Icon(
@@ -601,8 +614,8 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
       }).toList(),
       onChanged: (Pais? pais) {
         setState(() {
-          _paisSeleccionado = pais;
-          _estadoSeleccionado = null;
+          _paisIdSeleccionado = pais?.idPais;
+          _estadoIdSeleccionado = null;
           if (pais != null) {
             controller.loadEstadosByPais(pais.idPais);
           }
@@ -613,8 +626,21 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
 
   /// Widget para dropdown de estados
   Widget _buildEstadoDropdown(ClienteController controller) {
+    // Buscar el objeto Estado correspondiente al ID seleccionado
+    Estado? estadoValue;
+    if (_estadoIdSeleccionado != null && controller.estados.isNotEmpty) {
+      try {
+        estadoValue = controller.estados.firstWhere(
+          (estado) => estado.idEstado == _estadoIdSeleccionado,
+        );
+      } catch (e) {
+        // Si no se encuentra, usar null
+        estadoValue = null;
+      }
+    }
+
     return DropdownButtonFormField<Estado>(
-      value: _estadoSeleccionado,
+      value: estadoValue,
       decoration: InputDecoration(
         labelText: 'Estado',
         prefixIcon: const Icon(
@@ -658,7 +684,7 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
       }).toList(),
       onChanged: (Estado? estado) {
         setState(() {
-          _estadoSeleccionado = estado;
+          _estadoIdSeleccionado = estado?.idEstado;
         });
       },
     );
@@ -791,12 +817,12 @@ class _ClienteCreateScreenState extends State<ClienteCreateScreen> {
       clienteData['documento_identificacion'] = documento;
     }
 
-    if (_paisSeleccionado != null) {
-      clienteData['pais_id'] = _paisSeleccionado!.idPais;
+    if (_paisIdSeleccionado != null) {
+      clienteData['pais_id'] = _paisIdSeleccionado;
     }
 
-    if (_estadoSeleccionado != null) {
-      clienteData['estado_id'] = _estadoSeleccionado!.idEstado;
+    if (_estadoIdSeleccionado != null) {
+      clienteData['estado_id'] = _estadoIdSeleccionado;
     }
 
     // Crear cliente

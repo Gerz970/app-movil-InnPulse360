@@ -24,5 +24,16 @@ class Pais {
       idEstatus: json['id_estatus'] as int? ?? 1,
     );
   }
+
+  // Implementar == y hashCode para comparar por idPais
+  // Esto permite que DropdownButtonFormField reconozca objetos con el mismo idPais como iguales
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Pais && other.idPais == idPais;
+  }
+
+  @override
+  int get hashCode => idPais.hashCode;
 }
 

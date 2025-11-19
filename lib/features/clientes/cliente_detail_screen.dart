@@ -40,8 +40,8 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
   final _representanteController = TextEditingController();
   
   // Valores seleccionados
-  Pais? _paisSeleccionado;
-  Estado? _estadoSeleccionado;
+  int? _paisIdSeleccionado;
+  int? _estadoIdSeleccionado;
   int _tipoPersona = 1;
   
   bool _isInitialized = false;
@@ -127,38 +127,14 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     _representanteController.text = cliente.representante ?? '';
     _tipoPersona = cliente.tipoPersona;
     
-    // Precargar país: buscar en la lista de países cargados por ID
-    // IMPORTANTE: Solo usar países que estén en la lista para evitar errores del dropdown
-    if (controller.paisDetail != null && controller.paises.isNotEmpty) {
-      try {
-        _paisSeleccionado = controller.paises.firstWhere(
-          (pais) => pais.idPais == controller.paisDetail!.idPais,
-        );
-      } catch (e) {
-        // Si no se encuentra en la lista, dejar null (se actualizará cuando se carguen los países)
-        _paisSeleccionado = null;
-      }
-    } else if (controller.paisDetail != null) {
-      // Si aún no se han cargado los países, dejar null temporalmente
-      // Se actualizará cuando se carguen los catálogos
-      _paisSeleccionado = null;
+    // Precargar país: guardar solo el ID
+    if (controller.paisDetail != null) {
+      _paisIdSeleccionado = controller.paisDetail!.idPais;
     }
     
-    // Precargar estado: buscar en la lista de estados cargados por ID
-    // IMPORTANTE: Solo usar estados que estén en la lista para evitar errores del dropdown
-    if (controller.estadoDetail != null && controller.estados.isNotEmpty) {
-      try {
-        _estadoSeleccionado = controller.estados.firstWhere(
-          (estado) => estado.idEstado == controller.estadoDetail!.idEstado,
-        );
-      } catch (e) {
-        // Si no se encuentra en la lista, dejar null (se actualizará cuando se carguen los estados)
-        _estadoSeleccionado = null;
-      }
-    } else if (controller.estadoDetail != null) {
-      // Si aún no se han cargado los estados, dejar null temporalmente
-      // Se actualizará cuando se carguen los estados (si el país es México)
-      _estadoSeleccionado = null;
+    // Precargar estado: guardar solo el ID
+    if (controller.estadoDetail != null) {
+      _estadoIdSeleccionado = controller.estadoDetail!.idEstado;
     }
     
     // Marcar como inicializado
@@ -222,65 +198,9 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   
                   // Si los catálogos se cargan después, actualizar los dropdowns
                   if (_isInitialized && controller.clienteDetail != null) {
-                    // Actualizar país si los catálogos se cargan después
-                    if (controller.paises.isNotEmpty && controller.paisDetail != null) {
-                      try {
-                        final paisEncontrado = controller.paises.firstWhere(
-                          (pais) => pais.idPais == controller.paisDetail!.idPais,
-                        );
-                        if (_paisSeleccionado?.idPais != paisEncontrado.idPais) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              setState(() {
-                                _paisSeleccionado = paisEncontrado;
-                              });
-                            }
-                          });
-                        }
-                      } catch (e) {
-                        // Si no se encuentra en la lista, dejar null para evitar el error del dropdown
-                        // El dropdown mostrará el hint y el usuario podrá seleccionar manualmente
-                        if (_paisSeleccionado != null) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              setState(() {
-                                _paisSeleccionado = null;
-                              });
-                            }
-                          });
-                        }
-                      }
-                    }
+                    // Los IDs ya están precargados, no necesitamos actualizarlos
                     
-                    // Actualizar estado si se carga después
-                    if (controller.estados.isNotEmpty && controller.estadoDetail != null) {
-                      try {
-                        final estadoEncontrado = controller.estados.firstWhere(
-                          (estado) => estado.idEstado == controller.estadoDetail!.idEstado,
-                        );
-                        if (_estadoSeleccionado?.idEstado != estadoEncontrado.idEstado) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              setState(() {
-                                _estadoSeleccionado = estadoEncontrado;
-                              });
-                            }
-                          });
-                        }
-                      } catch (e) {
-                        // Si no se encuentra en la lista, dejar null para evitar el error del dropdown
-                        // El dropdown mostrará el hint y el usuario podrá seleccionar manualmente
-                        if (_estadoSeleccionado != null) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              setState(() {
-                                _estadoSeleccionado = null;
-                              });
-                            }
-                          });
-                        }
-                      }
-                    }
+                    // Los IDs ya están precargados, no necesitamos actualizarlos
                   }
 
                   // Formulario - mostrar solo si está inicializado y tenemos el detalle
@@ -923,37 +843,19 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
 
   /// Widget para dropdown de países (EDITABLE)
   Widget _buildPaisDropdown(ClienteController controller) {
-    // Si hay un país seleccionado, verificar que esté en la lista
-    Pais? paisValue = _paisSeleccionado;
-    
-    // Verificar que el país seleccionado esté en la lista de países cargados
-    if (paisValue != null && controller.paises.isNotEmpty) {
-      final existeEnLista = controller.paises.any((pais) => pais.idPais == paisValue!.idPais);
-      if (!existeEnLista) {
-        // Si el país seleccionado no está en la lista, buscar por ID
-        try {
-          paisValue = controller.paises.firstWhere(
-            (pais) => pais.idPais == paisValue!.idPais,
-          );
-        } catch (e) {
-          // Si no se encuentra, usar null para evitar el error
-          paisValue = null;
-        }
-      }
-    }
-    
-    // Si no hay país seleccionado pero hay detalle, buscar en la lista
-    if (paisValue == null && controller.paisDetail != null && controller.paises.isNotEmpty) {
+    // Buscar el objeto Pais correspondiente al ID seleccionado
+    Pais? paisValue;
+    if (_paisIdSeleccionado != null && controller.paises.isNotEmpty) {
       try {
         paisValue = controller.paises.firstWhere(
-          (pais) => pais.idPais == controller.paisDetail!.idPais,
+          (pais) => pais.idPais == _paisIdSeleccionado,
         );
       } catch (e) {
-        // Si no se encuentra en la lista, usar null (mostrará el hint)
+        // Si no se encuentra, usar null
         paisValue = null;
       }
     }
-    
+
     return DropdownButtonFormField<Pais>(
       value: paisValue,
       decoration: InputDecoration(
@@ -999,15 +901,10 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
       }).toList(),
       onChanged: (Pais? pais) {
         setState(() {
-          _paisSeleccionado = pais;
-          _estadoSeleccionado = null;
-          if (pais != null) {
-            // Solo cargar estados si el país es México
-            if (_esMexico(pais)) {
-              controller.loadEstadosByPais(pais.idPais);
-            }
-            // Si no es México, los estados simplemente no se cargarán
-            // y el dropdown se deshabilitará automáticamente
+          _paisIdSeleccionado = pais?.idPais;
+          _estadoIdSeleccionado = null;
+          if (pais != null && _esMexico(pais)) {
+            controller.loadEstadosByPais(pais.idPais);
           }
         });
       },
@@ -1022,8 +919,84 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
 
   /// Widget para dropdown de estados (EDITABLE)
   Widget _buildEstadoDropdown(ClienteController controller) {
+    // Buscar el objeto Pais seleccionado para determinar si es México
+    Pais? paisSeleccionado;
+    if (_paisIdSeleccionado != null && controller.paises.isNotEmpty) {
+      try {
+        paisSeleccionado = controller.paises.firstWhere(
+          (pais) => pais.idPais == _paisIdSeleccionado,
+        );
+      } catch (e) {
+        paisSeleccionado = null;
+      }
+    }
+
     // Solo mostrar/habilitar el dropdown si el país seleccionado es México
-    final esMexico = _esMexico(_paisSeleccionado ?? controller.paisDetail);
+    final esMexico = _esMexico(paisSeleccionado ?? controller.paisDetail);
+
+    // Si no es México o la lista está vacía, mostrar dropdown deshabilitado
+    if (!esMexico || controller.estados.isEmpty) {
+      return DropdownButtonFormField<Estado>(
+        value: null, // Forzar null si no es México o no hay estados
+        hint: Text(esMexico ? 'Selecciona un estado' : 'Solo disponible para México'),
+        decoration: InputDecoration(
+          labelText: 'Estado',
+          prefixIcon: const Icon(
+            Icons.map,
+            color: Color(0xFF6b7280),
+            size: 20,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFe5e7eb),
+              width: 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFF667eea),
+              width: 2,
+            ),
+          ),
+          filled: true,
+          fillColor: esMexico ? Colors.white : Colors.grey.shade100,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          labelStyle: TextStyle(
+            color: esMexico ? const Color(0xFF6b7280) : Colors.grey.shade400,
+            fontSize: 14,
+          ),
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
+            fontSize: 14,
+          ),
+        ),
+        items: controller.estados.map((estado) {
+          return DropdownMenuItem<Estado>(
+            value: estado,
+            child: Text(estado.nombre),
+          );
+        }).toList(),
+        onChanged: esMexico && controller.estados.isNotEmpty
+            ? (Estado? estado) {
+                setState(() {
+                  _estadoIdSeleccionado = estado?.idEstado;
+                });
+              }
+            : null,
+        validator: (value) {
+          // Estado es opcional, no requiere validación
+          return null;
+        },
+      );
+    }
     
     // Si no es México o la lista está vacía, el valor debe ser null
     if (!esMexico || controller.estados.isEmpty) {
@@ -1078,7 +1051,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         onChanged: esMexico && controller.estados.isNotEmpty
             ? (Estado? estado) {
                 setState(() {
-                  _estadoSeleccionado = estado;
+                  _estadoIdSeleccionado = estado?.idEstado;
                 });
               }
             : null,
@@ -1088,43 +1061,20 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         },
       );
     }
-    
-    // Si hay un estado seleccionado, verificar que esté en la lista
-    Estado? estadoValue = _estadoSeleccionado;
-    
-    // Verificar que el estado seleccionado esté en la lista de estados cargados
-    if (estadoValue != null) {
-      final existeEnLista = controller.estados.any((estado) => estado.idEstado == estadoValue!.idEstado);
-      if (!existeEnLista) {
-        // Si el estado seleccionado no está en la lista, buscar por ID
-        try {
-          estadoValue = controller.estados.firstWhere(
-            (estado) => estado.idEstado == estadoValue!.idEstado,
-          );
-        } catch (e) {
-          // Si no se encuentra, usar null para evitar el error
-          estadoValue = null;
-        }
-      } else {
-        // Si existe, obtener el objeto exacto de la lista (no el de _estadoSeleccionado)
-        estadoValue = controller.estados.firstWhere(
-          (estado) => estado.idEstado == estadoValue!.idEstado,
-        );
-      }
-    }
-    
-    // Si no hay estado seleccionado pero hay detalle, buscar en la lista
-    if (estadoValue == null && controller.estadoDetail != null) {
+
+    // Buscar el objeto Estado correspondiente al ID seleccionado
+    Estado? estadoValue;
+    if (_estadoIdSeleccionado != null && controller.estados.isNotEmpty) {
       try {
         estadoValue = controller.estados.firstWhere(
-          (estado) => estado.idEstado == controller.estadoDetail!.idEstado,
+          (estado) => estado.idEstado == _estadoIdSeleccionado,
         );
       } catch (e) {
-        // Si no se encuentra en la lista, usar null (mostrará el hint)
+        // Si no se encuentra, usar null
         estadoValue = null;
       }
     }
-    
+
     return DropdownButtonFormField<Estado>(
       value: estadoValue, // Este valor ahora está garantizado que está en la lista
       hint: Text(esMexico ? 'Selecciona un estado' : 'Solo disponible para México'),
@@ -1176,7 +1126,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
       onChanged: esMexico && controller.estados.isNotEmpty
           ? (Estado? estado) {
               setState(() {
-                _estadoSeleccionado = estado;
+                _estadoIdSeleccionado = estado?.idEstado;
               });
             }
           : null,
@@ -1196,7 +1146,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     }
 
     // Validar país (requerido)
-    if (_paisSeleccionado == null && controller.paisDetail == null) {
+    if (_paisIdSeleccionado == null && controller.paisDetail == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor selecciona un país'),
@@ -1252,13 +1202,13 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     }
 
     // Agregar país (usar seleccionado o el del detalle)
-    final paisId = _paisSeleccionado?.idPais ?? controller.paisDetail?.idPais;
+    final paisId = _paisIdSeleccionado ?? controller.paisDetail?.idPais;
     if (paisId != null) {
       clienteData['pais_id'] = paisId;
     }
 
     // Agregar estado_id solo si está seleccionado (opcional)
-    final estadoId = _estadoSeleccionado?.idEstado ?? controller.estadoDetail?.idEstado;
+    final estadoId = _estadoIdSeleccionado ?? controller.estadoDetail?.idEstado;
     if (estadoId != null) {
       clienteData['estado_id'] = estadoId;
     }
