@@ -4,6 +4,7 @@ import '../models/incidencia_model.dart'; // modelo de Incidencia
 import '../models/habitacion_area_model.dart'; // modelo de HabitacionArea
 import '../models/galeria_imagen_model.dart'; // modelo de Galería
 import 'package:dio/dio.dart'; // clase dio para construir objeto de http
+import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 
 /// Controlador para manejar el estado del módulo de incidencias
 /// Usa ChangeNotifier para notificar cambios de estado
@@ -153,37 +154,72 @@ class IncidenciaController extends ChangeNotifier {
     }
   }
 
-  /// Método para cargar los catálogos de habitaciones/áreas
-  /// Por ahora se deja preparado para cuando exista el endpoint
-  /// TODO: Implementar cuando exista endpoint de habitaciones/áreas
-  Future<void> loadCatalogs() async {
+  /// Método para cargar las habitaciones reservadas por el cliente
+  /// Obtiene la lista de habitaciones que el cliente ha reservado para poder crear incidencias
+  Future<void> loadHabitacionesReservadasCliente() async {
+    print('🔄 Iniciando carga de habitaciones reservadas por cliente...');
     _isLoadingCatalogs = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // TODO: Implementar carga de habitaciones/áreas cuando exista endpoint
-      // Por ahora se deja vacío
-      _habitacionesAreas = [];
-      
+      // Obtener cliente_id desde la sesión (está dentro del objeto 'usuario')
+      final session = await SessionStorage.getSession();
+      final usuario = session?['usuario'] as Map<String, dynamic>?;
+      final clienteId = usuario?['cliente_id'] as int?;
+
+      if (clienteId == null || clienteId == 0) {
+        throw DioException(
+          requestOptions: RequestOptions(path: ''),
+          error: 'Cliente ID no encontrado en la sesión',
+          type: DioExceptionType.unknown,
+        );
+      }
+
+      // Hacer petición al API directamente con el cliente_id
+      final response = await _incidenciaService.fetchHabitacionesReservadasCliente(clienteId);
+
+      // Parsear respuesta a lista de HabitacionArea
+      if (response.data != null && response.data is List) {
+        _habitacionesAreas = (response.data as List)
+            .map((json) => HabitacionArea.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        _habitacionesAreas = [];
+      }
+
       _isLoadingCatalogs = false;
       notifyListeners();
 
-      print("Catálogos cargados correctamente");
-    } catch (e) {
+      print("✅ Habitaciones reservadas cargadas correctamente");
+      print('Cliente ID: $clienteId');
+      print('Total de habitaciones: ${_habitacionesAreas.length}');
+      } catch (e) {
       _isLoadingCatalogs = false;
+      print('❌ Error cargando habitaciones reservadas: $e');
 
       if (e is DioException) {
         if (e.response != null) {
-          _errorMessage = 'Error al cargar catálogos: ${e.response?.statusCode}';
-          print('Error del servidor al cargar catálogos: ${e.response?.data}');
+          final responseData = e.response?.data;
+
+          // Error 401 - No autenticado
+          if (e.response?.statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+               responseData['detail'] == 'Not authenticated')) {
+            _isNotAuthenticated = true;
+            _errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print('Error de autenticación al cargar habitaciones: ${e.response?.data}');
+          } else {
+            _errorMessage = 'Error al cargar habitaciones: ${e.response?.statusCode}';
+            print('Error del servidor al cargar habitaciones: ${e.response?.data}');
+          }
         } else {
-          _errorMessage = 'Error de conexión al cargar catálogos: ${e.message ?? e.toString()}';
-          print('Error de conexión al cargar catálogos: ${e.message}');
+          _errorMessage = 'Error de conexión al cargar habitaciones: ${e.message ?? e.toString()}';
+          print('Error de conexión al cargar habitaciones: ${e.message}');
         }
       } else {
-        _errorMessage = 'Error al cargar catálogos: ${e.toString()}';
-        print('Error general al cargar catálogos: $e');
+        _errorMessage = 'Error al cargar habitaciones: ${e.toString()}';
+        print('Error general al cargar habitaciones: $e');
       }
 
       notifyListeners();

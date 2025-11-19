@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+simport 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
@@ -19,20 +19,30 @@ class _IncidenciaCreateScreenState extends State<IncidenciaCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   
   // Controladores de texto
-  final _habitacionAreaIdController = TextEditingController();
   final _incidenciaController = TextEditingController();
   final _descripcionController = TextEditingController();
   
   // Valores seleccionados
   DateTime _fechaIncidencia = DateTime.now();
-  int _idEstatus = 1; // 1 = Activo (default)
+  int? _selectedHabitacionAreaId;
 
   @override
   void dispose() {
-    _habitacionAreaIdController.dispose();
     _incidenciaController.dispose();
     _descripcionController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    print('🏗️ IncidenciaCreateScreen - initState ejecutado');
+    // Cargar habitaciones reservadas por el cliente al inicializar la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('📞 PostFrameCallback ejecutado - llamando loadHabitacionesReservadasCliente');
+      final controller = Provider.of<IncidenciaController>(context, listen: false);
+      controller.loadHabitacionesReservadasCliente();
+    });
   }
 
   @override
@@ -83,24 +93,8 @@ class _IncidenciaCreateScreenState extends State<IncidenciaCreateScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Campo: Habitación/Área ID
-                _buildTextField(
-                  controller: _habitacionAreaIdController,
-                  label: 'ID de Habitación/Área',
-                  hint: 'Ingresa el ID de la habitación o área',
-                  icon: Icons.room,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty || value.trim().isEmpty) {
-                      return 'El ID de habitación/área es requerido';
-                    }
-                    final id = int.tryParse(value.trim());
-                    if (id == null || id <= 0) {
-                      return 'Ingresa un ID válido';
-                    }
-                    return null;
-                  },
-                ),
+                // Campo: Habitación/Área
+                _buildHabitacionDropdown(),
                 const SizedBox(height: 20),
                 // Campo: Título de la incidencia
                 _buildTextField(
@@ -141,9 +135,6 @@ class _IncidenciaCreateScreenState extends State<IncidenciaCreateScreen> {
                 const SizedBox(height: 20),
                 // Campo: Fecha de incidencia
                 _buildDateField(),
-                const SizedBox(height: 20),
-                // Campo: Estatus
-                _buildEstatusDropdown(),
                 const SizedBox(height: 32),
                 // Botón Guardar
                 SizedBox(
@@ -367,83 +358,160 @@ class _IncidenciaCreateScreenState extends State<IncidenciaCreateScreen> {
     return '${date.day} de ${meses[date.month - 1]} de ${date.year}';
   }
 
-  /// Widget para construir dropdown de estatus
-  Widget _buildEstatusDropdown() {
-    return DropdownButtonFormField<int>(
-      value: _idEstatus,
-      decoration: InputDecoration(
-        labelText: 'Estatus',
-        prefixIcon: const Icon(
-          Icons.check_circle,
-          color: Color(0xFF6b7280),
-          size: 20,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF667eea),
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
-          fontSize: 14,
-        ),
-      ),
-      items: const [
-        DropdownMenuItem<int>(
-          value: 1,
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, size: 18, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Activo'),
-            ],
-          ),
-        ),
-        DropdownMenuItem<int>(
-          value: 0,
-          child: Row(
-            children: [
-              Icon(Icons.cancel, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Inactivo'),
-            ],
-          ),
-        ),
-      ],
-      validator: (value) {
-        if (value == null) {
-          return 'El estatus es requerido';
+  /// Widget para construir dropdown de habitaciones
+  Widget _buildHabitacionDropdown() {
+    return Consumer<IncidenciaController>(
+      builder: (context, controller, child) {
+        // Mostrar loading si está cargando habitaciones
+        if (controller.isLoadingCatalogs) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFe5e7eb)),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF667eea),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Cargando habitaciones...',
+                  style: TextStyle(
+                    color: Color(0xFF6b7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
-        return null;
-      },
-      onChanged: (int? value) {
-        if (value != null) {
-          setState(() {
-            _idEstatus = value;
-          });
+
+        // Verificar si hay habitaciones disponibles
+        if (controller.habitacionesAreas.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFe5e7eb)),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Color(0xFF6b7280),
+                  size: 20,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Debes haber tenido alguna estancia en el hotel para poder levantar una incidencia.',
+                    style: TextStyle(
+                      color: Color(0xFF6b7280),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
+
+        return DropdownButtonFormField<int>(
+          initialValue: _selectedHabitacionAreaId,
+          decoration: InputDecoration(
+            labelText: 'Habitación/Área',
+            prefixIcon: const Icon(
+              Icons.room,
+              color: Color(0xFF6b7280),
+              size: 20,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFe5e7eb),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFe5e7eb),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF667eea),
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            labelStyle: const TextStyle(
+              color: Color(0xFF6b7280),
+              fontSize: 14,
+            ),
+          ),
+          hint: const Text(
+            'Selecciona una habitación',
+            style: TextStyle(
+              color: Color(0xFF9ca3af),
+              fontSize: 14,
+            ),
+          ),
+          isExpanded: true,
+          items: controller.habitacionesAreas.map((habitacion) {
+            return DropdownMenuItem<int>(
+              value: habitacion.idHabitacionArea,
+              child: SizedBox(
+                width: double.infinity,
+                child: Row(
+                  children: [
+                    const Icon(Icons.room, size: 18, color: Color(0xFF667eea)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        habitacion.nombreClave,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF1a1a1a),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+          validator: (value) {
+            if (value == null) {
+              return 'Debes seleccionar una habitación';
+            }
+            return null;
+          },
+          onChanged: (int? value) {
+            if (value != null) {
+              setState(() {
+                _selectedHabitacionAreaId = value;
+              });
+            }
+          },
+        );
       },
     );
   }
@@ -454,20 +522,24 @@ class _IncidenciaCreateScreenState extends State<IncidenciaCreateScreen> {
       return;
     }
 
+    // Validar que se haya seleccionado una habitación
+    if (_selectedHabitacionAreaId == null) {
+      return;
+    }
+
     // Construir Map con datos de la incidencia
-    final habitacionAreaId = int.parse(_habitacionAreaIdController.text.trim());
     final incidencia = _incidenciaController.text.trim();
     final descripcion = _descripcionController.text.trim();
-    
+
     // Formatear fecha a ISO 8601 con timezone Z
     final fechaIso = _fechaIncidencia.toUtc().toIso8601String();
-    
+
     final incidenciaData = <String, dynamic>{
-      'habitacion_area_id': habitacionAreaId,
+      'habitacion_area_id': _selectedHabitacionAreaId,
       'incidencia': incidencia,
       'descripcion': descripcion,
       'fecha_incidencia': fechaIso,
-      'id_estatus': _idEstatus,
+      // id_estatus se asigna por defecto en el backend
     };
 
     // Crear incidencia

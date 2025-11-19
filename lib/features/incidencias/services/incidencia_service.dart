@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart'; // se importa libreria para hacer peticiones HTTP al backend
 import '../../../api/api_config.dart'; // importar configuracion del api
 import '../../../api/endpoints_incidencias.dart'; // importar endpoints de incidencias
+import '../../../api/endpoints_reservacion.dart'; // importar endpoints de reservaciones
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 
 class IncidenciaService {
@@ -325,6 +326,49 @@ class IncidenciaService {
 
       return response; // Respuesta del API
     } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para obtener habitaciones reservadas por el cliente
+  /// Requiere token de autenticación en el header
+  /// Parámetro: clienteId del cliente
+  Future<Response> fetchHabitacionesReservadasCliente(int clienteId) async {
+    print('🔐 Obteniendo token de autenticación...');
+    // Obtener token de la sesión
+    final token = await _getToken();
+    print('🎫 Token obtenido: ${token != null ? "SI" : "NO"}');
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsReservacion.habitacionesReservadasCliente(clienteId);
+    print('🌐 URL construida: $url');
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición GET
+    try {
+      print('📡 Enviando petición GET...');
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+      print('✅ Respuesta obtenida. Status: ${response.statusCode}');
+
+      return response; // Respuesta del API
+    } catch (e) {
+      print('❌ Error en petición: $e');
       // Manejo de errores
       rethrow;
     }
