@@ -224,8 +224,22 @@ class AppSidebar extends StatelessWidget {
     final modulosMovil = modulos.where((modulo) {
       final moduloMap = modulo as Map<String, dynamic>;
       final movil = moduloMap['movil'];
-      // Verificar si movil es 1 (puede ser int o num)
-      return movil == 1 || movil == '1';
+      
+      // Verificar si movil es 1 (puede ser int, num, String '1', o bool true)
+      if (movil == null) {
+        return false; // Si es null, no es móvil
+      }
+      
+      // Manejar diferentes tipos de datos
+      if (movil is int || movil is num) {
+        return movil == 1;
+      } else if (movil is String) {
+        return movil == '1' || movil.toLowerCase() == 'true';
+      } else if (movil is bool) {
+        return movil == true;
+      }
+      
+      return false; // Por defecto, no es móvil
     }).toList();
 
     // Si no hay módulos móviles, mostrar mensaje
