@@ -97,10 +97,6 @@ class AuthService {
       data['password'] = password;
     }
 
-    // Log para debugging
-    print('Enviando petición de registro a: $url');
-    print('Datos enviados: $data');
-
     // Hacer la petición POST sin autenticación
     try {
       final response = await _dio.post(

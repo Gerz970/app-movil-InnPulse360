@@ -1,0 +1,13 @@
+import 'package:flutter/material.dart';
+import '../../features/incidencias/incidencias_list_screen.dart';
+import '../../features/clientes/clientes_list_screen.dart';
+import '../../features/hoteles/hotels_list_screen.dart';
+import '../../features/common/under_construction_screen.dart';
+
+
+final Map<String, Widget Function()> moduleScreens = {
+  // Rutas exactas del backend según MODULOS.md
+  'clientes_administracion_screen': () => const ClientesListScreen(),
+  'hotel_administracion_screen': () => const HotelsListScreen(),
+  'incidencias_cliente_screen': () => const IncidenciasListScreen()
+};

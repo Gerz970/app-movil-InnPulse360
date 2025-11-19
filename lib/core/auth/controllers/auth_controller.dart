@@ -306,9 +306,6 @@ class AuthController extends ChangeNotifier
       // 4. Desactivar loading y notificar estado
       _isRegistering = false;
       notifyListeners();
-
-      print("Registro ejecutado correctamente");
-      print('Status code: ${response.statusCode}');
       return true;
     } catch (e) {
       // 5. Desactivar loading
@@ -319,8 +316,7 @@ class AuthController extends ChangeNotifier
         if (e.response != null) {
           // El servidor respondió con un código de error
           final errorData = e.response?.data;
-          print('Error del servidor (${e.response?.statusCode}): ${e.response?.data}');
-          
+
           if (errorData is Map) {
             // Manejar errores de validación 422 de FastAPI
             if (e.response?.statusCode == 422 && errorData['detail'] != null) {

@@ -14,7 +14,6 @@ class SessionStorage {
       final sessionJson = jsonEncode(sessionData);
       return await prefs.setString(_sessionKey, sessionJson);
     } catch (e) {
-      print('Error al guardar sesión: $e');
       return false;
     }
   }
@@ -33,7 +32,6 @@ class SessionStorage {
       final sessionData = jsonDecode(sessionJson) as Map<String, dynamic>;
       return sessionData;
     } catch (e) {
-      print('Error al obtener sesión: $e');
       return null;
     }
   }
@@ -45,7 +43,6 @@ class SessionStorage {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_sessionKey);
     } catch (e) {
-      print('Error al limpiar sesión: $e');
       return false;
     }
   }
@@ -57,7 +54,6 @@ class SessionStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_sessionKey);
     } catch (e) {
-      print('Error al verificar sesión: $e');
       return false;
     }
   }

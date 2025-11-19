@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
-import '../features/hoteles/hotels_list_screen.dart';
-import '../features/clientes/clientes_list_screen.dart';
-import '../features/incidencias/incidencias_list_screen.dart';
+import '../core/utils/modules.dart';
 import '../features/common/under_construction_screen.dart';
 import '../features/hoteles/controllers/hotel_controller.dart';
 import '../features/perfil/screens/perfil_screen.dart';
@@ -222,8 +220,16 @@ class AppSidebar extends StatelessWidget {
       modulos = loginResponse['modulos'] as List;
     }
 
-    // Si no hay módulos, mostrar mensaje
-    if (modulos.isEmpty) {
+    // Filtrar solo los módulos que son móvil (movil == 1)
+    final modulosMovil = modulos.where((modulo) {
+      final moduloMap = modulo as Map<String, dynamic>;
+      final movil = moduloMap['movil'];
+      // Verificar si movil es 1 (puede ser int o num)
+      return movil == 1 || movil == '1';
+    }).toList();
+
+    // Si no hay módulos móviles, mostrar mensaje
+    if (modulosMovil.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
@@ -241,9 +247,10 @@ class AppSidebar extends StatelessWidget {
     // Construir lista de widgets de módulos
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      children: modulos.map<Widget>((modulo) {
+      children: modulosMovil.map<Widget>((modulo) {
         final moduloMap = modulo as Map<String, dynamic>;
         final nombreModulo = moduloMap['nombre'] as String? ?? '';
+        final rutaModulo = moduloMap['ruta'] as String? ?? '';
         
         return Column(
           children: [
@@ -251,7 +258,7 @@ class AppSidebar extends StatelessWidget {
               context: context,
               icon: _getIconForModule(nombreModulo),
               title: nombreModulo,
-              onTap: () => _navigateToModuleScreen(context, nombreModulo),
+              onTap: () => _navigateToModuleScreen(context, rutaModulo),
             ),
             const SizedBox(height: 8),
           ],
@@ -287,29 +294,24 @@ class AppSidebar extends StatelessWidget {
     }
   }
 
-  /// Navegar a la pantalla correspondiente según el nombre del módulo
-  void _navigateToModuleScreen(BuildContext context, String nombreModulo) {
+  /// Navegar a la pantalla correspondiente según la ruta del módulo
+  void _navigateToModuleScreen(BuildContext context, String rutaModulo) {
     Navigator.pop(context);
-    
-    final nombreLower = nombreModulo.toLowerCase();
-    Widget screen;
-    
-    if (nombreLower.contains('incidencia')) {
-      screen = const IncidenciasListScreen();
-    } else if (nombreLower.contains('cliente')) {
-      screen = const ClientesListScreen();
-    } else if (nombreLower.contains('hotel')) {
-      screen = const HotelsListScreen();
-    } else if (nombreLower.contains('reservacion')) {
-      screen = const UnderConstructionScreen(title: 'Reservaciones');
-    } else {
-      // Para otros módulos, mostrar pantalla de construcción
-      screen = UnderConstructionScreen(title: nombreModulo);
-    }
-    
+
+    final rutaLower = rutaModulo;
+
+    // Buscar coincidencia exacta con la ruta del módulo
+    final entry = moduleScreens.entries.firstWhere(
+      (e) => rutaLower == e.key,
+      orElse: () => MapEntry(
+        'default',
+        () => UnderConstructionScreen(title: rutaModulo),
+      ),
+    );
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => screen),
+      MaterialPageRoute(builder: (_) => entry.value()),
     );
   }
 
