@@ -126,6 +126,11 @@ class HotelController extends ChangeNotifier {
         _hotels = [];
       }
 
+      // 3.1.- Preseleccionar el primer hotel si no hay uno seleccionado
+      if (_hotels.isNotEmpty && _hotelSeleccionado == null) {
+        seleccionarHotel(_hotels.first);
+      }
+
       // 4.- desactivar loading y notificar estado
       _isLoading = false;
       notifyListeners();
