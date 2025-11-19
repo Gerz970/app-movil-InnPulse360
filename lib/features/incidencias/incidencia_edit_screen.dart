@@ -27,13 +27,12 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
   final _formKey = GlobalKey<FormState>();
   
   // Controladores de texto
-  final _habitacionAreaIdController = TextEditingController();
   final _incidenciaController = TextEditingController();
   final _descripcionController = TextEditingController();
   
   // Valores seleccionados
   DateTime? _fechaIncidencia;
-  int? _idEstatus;
+  int? _selectedHabitacionAreaId;
   
   bool _isInitialized = false;
 
@@ -42,12 +41,13 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
   @override
   void initState() {
     super.initState();
-    // Cargar detalle de la incidencia y galería al iniciar
-    // Hacer las peticiones de forma secuencial para evitar conflictos
+    // Cargar habitaciones reservadas por el cliente al inicializar la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         final controller = Provider.of<IncidenciaController>(context, listen: false);
-        // Primero cargar el detalle
+        // Cargar habitaciones disponibles
+        controller.loadHabitacionesReservadasCliente();
+        // Cargar detalle de la incidencia
         await controller.loadIncidenciaDetail(widget.incidenciaId);
         // Esperar un momento antes de cargar la galería
         await Future.delayed(const Duration(milliseconds: 300));
@@ -61,7 +61,6 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
 
   @override
   void dispose() {
-    _habitacionAreaIdController.dispose();
     _incidenciaController.dispose();
     _descripcionController.dispose();
     super.dispose();
@@ -76,21 +75,10 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
     print('🔍 Precargando datos de la incidencia: ${incidencia.incidencia}');
     
     // Precargar valores en controladores
-    _habitacionAreaIdController.text = incidencia.habitacionAreaId.toString();
+    _selectedHabitacionAreaId = incidencia.habitacionAreaId;
     _incidenciaController.text = incidencia.incidencia;
     _descripcionController.text = incidencia.descripcion;
     _fechaIncidencia = incidencia.fechaIncidencia;
-    
-    // Validar que el estatus sea válido (0 o 1) antes de asignarlo
-    // Si el valor no está en la lista de items válidos, usar null
-    final estatusValue = incidencia.idEstatus;
-    if (estatusValue == 0 || estatusValue == 1) {
-      _idEstatus = estatusValue;
-    } else {
-      // Si el valor no es válido, usar null para que el dropdown no tenga valor seleccionado
-      _idEstatus = null;
-      print('⚠️ Advertencia: El estatus de la incidencia ($estatusValue) no es válido. Se establecerá como null.');
-    }
     
     // Marcar como inicializado
     _isInitialized = true;
@@ -227,24 +215,8 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Campo: Habitación/Área ID
-                _buildTextField(
-                  controller: _habitacionAreaIdController,
-                  label: 'ID de Habitación/Área',
-                  hint: 'Ingresa el ID de la habitación o área',
-                  icon: Icons.room,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty || value.trim().isEmpty) {
-                      return 'El ID de habitación/área es requerido';
-                    }
-                    final id = int.tryParse(value.trim());
-                    if (id == null || id <= 0) {
-                      return 'Ingresa un ID válido';
-                    }
-                    return null;
-                  },
-                ),
+                // Campo: Habitación/Área
+                _buildHabitacionDropdown(),
                 const SizedBox(height: 20),
                 // Campo: Título de la incidencia
                 _buildTextField(
@@ -285,9 +257,6 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
                 const SizedBox(height: 20),
                 // Campo: Fecha de incidencia
                 _buildDateField(),
-                const SizedBox(height: 20),
-                // Campo: Estatus
-                _buildEstatusDropdown(),
                 const SizedBox(height: 32),
                 // Sección de Galería
                 _buildGallerySection(controller),
@@ -446,7 +415,6 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
           initialDate: _fechaIncidencia ?? DateTime.now(),
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
-          locale: const Locale('es', 'ES'),
         );
         if (picked != null && picked != _fechaIncidencia) {
           setState(() {
@@ -514,87 +482,160 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
     return '${date.day} de ${meses[date.month - 1]} de ${date.year}';
   }
 
-  /// Widget para construir dropdown de estatus
-  Widget _buildEstatusDropdown() {
-    // Validar que el valor esté en la lista de items válidos
-    // Si no está, usar null para evitar el error del DropdownButton
-    final validValue = (_idEstatus == 0 || _idEstatus == 1) ? _idEstatus : null;
-    
-    return DropdownButtonFormField<int>(
-      value: validValue,
-      decoration: InputDecoration(
-        labelText: 'Estatus',
-        prefixIcon: const Icon(
-          Icons.check_circle,
-          color: Color(0xFF6b7280),
-          size: 20,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF667eea),
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
-          fontSize: 14,
-        ),
-      ),
-      items: const [
-        DropdownMenuItem<int>(
-          value: 1,
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, size: 18, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Activo'),
-            ],
-          ),
-        ),
-        DropdownMenuItem<int>(
-          value: 0,
-          child: Row(
-            children: [
-              Icon(Icons.cancel, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Inactivo'),
-            ],
-          ),
-        ),
-      ],
-      validator: (value) {
-        if (value == null) {
-          return 'El estatus es requerido';
+  /// Widget para construir dropdown de habitaciones
+  Widget _buildHabitacionDropdown() {
+    return Consumer<IncidenciaController>(
+      builder: (context, controller, child) {
+        // Mostrar loading si está cargando habitaciones
+        if (controller.isLoadingCatalogs) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFe5e7eb)),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF667eea),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Cargando habitaciones...',
+                  style: TextStyle(
+                    color: Color(0xFF6b7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
-        return null;
-      },
-      onChanged: (int? value) {
-        if (value != null) {
-          setState(() {
-            _idEstatus = value;
-          });
+
+        // Verificar si hay habitaciones disponibles
+        if (controller.habitacionesAreas.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFe5e7eb)),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Color(0xFF6b7280),
+                  size: 20,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Debes haber tenido alguna estancia en el hotel para poder levantar una incidencia.',
+                    style: TextStyle(
+                      color: Color(0xFF6b7280),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
+
+        return DropdownButtonFormField<int>(
+          value: _selectedHabitacionAreaId,
+          decoration: InputDecoration(
+            labelText: 'Habitación/Área',
+            prefixIcon: const Icon(
+              Icons.room,
+              color: Color(0xFF6b7280),
+              size: 20,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFe5e7eb),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFe5e7eb),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF667eea),
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            labelStyle: const TextStyle(
+              color: Color(0xFF6b7280),
+              fontSize: 14,
+            ),
+          ),
+          hint: const Text(
+            'Selecciona una habitación',
+            style: TextStyle(
+              color: Color(0xFF9ca3af),
+              fontSize: 14,
+            ),
+          ),
+          isExpanded: true,
+          items: controller.habitacionesAreas.map((habitacion) {
+            return DropdownMenuItem<int>(
+              value: habitacion.idHabitacionArea,
+              child: SizedBox(
+                width: double.infinity,
+                child: Row(
+                  children: [
+                    const Icon(Icons.room, size: 18, color: Color(0xFF667eea)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        habitacion.nombreClave,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF1a1a1a),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+          validator: (value) {
+            if (value == null) {
+              return 'Debes seleccionar una habitación';
+            }
+            return null;
+          },
+          onChanged: (int? value) {
+            if (value != null) {
+              setState(() {
+                _selectedHabitacionAreaId = value;
+              });
+            }
+          },
+        );
       },
     );
   }
@@ -605,7 +646,7 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
       return;
     }
 
-    if (_fechaIncidencia == null || _idEstatus == null) {
+    if (_fechaIncidencia == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, completa todos los campos requeridos'),
@@ -615,8 +656,18 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
       return;
     }
 
+    // Validar que se haya seleccionado una habitación
+    if (_selectedHabitacionAreaId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, selecciona una habitación'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // Construir Map con datos de la incidencia
-    final habitacionAreaId = int.parse(_habitacionAreaIdController.text.trim());
     final incidencia = _incidenciaController.text.trim();
     final descripcion = _descripcionController.text.trim();
     
@@ -624,11 +675,10 @@ class _IncidenciaEditScreenState extends State<IncidenciaEditScreen> {
     final fechaIso = _fechaIncidencia!.toUtc().toIso8601String();
     
     final incidenciaData = <String, dynamic>{
-      'habitacion_area_id': habitacionAreaId,
+      'habitacion_area_id': _selectedHabitacionAreaId,
       'incidencia': incidencia,
       'descripcion': descripcion,
       'fecha_incidencia': fechaIso,
-      'id_estatus': _idEstatus!,
     };
 
     // Actualizar incidencia

@@ -331,6 +331,43 @@ class IncidenciaService {
     }
   }
 
+  /// Método para obtener una habitación/área por ID
+  /// Requiere token de autenticación en el header
+  /// Parámetro: habitacionAreaId del habitación/área
+  Future<Response> fetchHabitacionArea(int habitacionAreaId) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + 'habitacion-area/$habitacionAreaId';
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
   /// Método para obtener habitaciones reservadas por el cliente
   /// Requiere token de autenticación en el header
   /// Parámetro: clienteId del cliente

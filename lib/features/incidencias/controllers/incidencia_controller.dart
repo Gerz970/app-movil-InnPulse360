@@ -311,6 +311,32 @@ class IncidenciaController extends ChangeNotifier {
       // Parsear respuesta a Incidencia
       if (response.data != null && response.data is Map<String, dynamic>) {
         _incidenciaDetail = Incidencia.fromJson(response.data as Map<String, dynamic>);
+
+        // Si la habitación no viene en la respuesta, intentar cargarla por separado
+        if (_incidenciaDetail != null && _incidenciaDetail!.habitacionArea == null) {
+          try {
+            print('Habitación no incluida en respuesta, cargando por separado...');
+            final habitacionResponse = await _incidenciaService.fetchHabitacionArea(_incidenciaDetail!.habitacionAreaId);
+
+            if (habitacionResponse.data != null && habitacionResponse.data is Map<String, dynamic>) {
+              final habitacionArea = HabitacionArea.fromJson(habitacionResponse.data as Map<String, dynamic>);
+              // Crear una nueva instancia de Incidencia con la habitación cargada
+              _incidenciaDetail = Incidencia(
+                idIncidencia: _incidenciaDetail!.idIncidencia,
+                habitacionAreaId: _incidenciaDetail!.habitacionAreaId,
+                incidencia: _incidenciaDetail!.incidencia,
+                descripcion: _incidenciaDetail!.descripcion,
+                fechaIncidencia: _incidenciaDetail!.fechaIncidencia,
+                idEstatus: _incidenciaDetail!.idEstatus,
+                habitacionArea: habitacionArea,
+              );
+              print('Habitación cargada correctamente por separado');
+            }
+          } catch (habitacionError) {
+            print('Error al cargar habitación por separado: $habitacionError');
+            // No es un error crítico, continuar sin la habitación
+          }
+        }
       } else {
         _detailErrorMessage = 'No se pudo obtener el detalle de la incidencia';
       }

@@ -1,4 +1,4 @@
-simport 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
@@ -290,7 +290,6 @@ class _IncidenciaCreateScreenState extends State<IncidenciaCreateScreen> {
           initialDate: _fechaIncidencia,
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
-          locale: const Locale('es', 'ES'),
         );
         if (picked != null && picked != _fechaIncidencia) {
           setState(() {

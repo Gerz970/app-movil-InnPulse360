@@ -218,8 +218,8 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
                         const SizedBox(height: 16),
                         _buildInfoCard(
                           'Habitación/Área',
-                          incidencia.habitacionArea?.nombreClave ?? 
-                          'ID: ${incidencia.habitacionAreaId}',
+                          incidencia.habitacionArea?.nombreClave ??
+                          'Habitación ${incidencia.habitacionAreaId}',
                           Icons.room,
                         ),
                         const SizedBox(height: 16),
