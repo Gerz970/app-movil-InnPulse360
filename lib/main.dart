@@ -8,6 +8,7 @@ import 'features/hoteles/controllers/hotel_controller.dart';
 import 'features/clientes/controllers/cliente_controller.dart';
 import 'features/incidencias/controllers/incidencia_controller.dart';
 import 'features/perfil/controllers/perfil_controller.dart';
+import 'features/limpieza/controllers/limpieza_controller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => IncidenciaController()),
         ChangeNotifierProvider(create: (_) => PisoController()),
         ChangeNotifierProvider(create: (_) => PerfilController()),
+        ChangeNotifierProvider(create: (_) => LimpiezaController()),
 
       ],
       child: MaterialApp(
