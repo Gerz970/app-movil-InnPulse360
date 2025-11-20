@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart'; // se importa libreria para hacer peticiones HTTP al backend
 import '../../../api/api_config.dart'; // importar configuracion del api
-import '../../../api/endpoints_limpieza.dart'; // importar endpoints de limpieza
+import '../../../api/endpoints_empleado.dart'; // importar endpoints de empleados
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 
-class LimpiezaService {
+class EmpleadoService {
   //se instancia la clase de DIO para las peticiones de HTTP
   final Dio _dio;
 
@@ -12,7 +12,7 @@ class LimpiezaService {
 
   // Constructor de la clase, se inicializa validando si se proporciona una instancia del mismo objeto
   // en caso de que no se proporcione, este creara una nueva
-  LimpiezaService({Dio? dio}) : _dio = dio ?? Dio() {
+  EmpleadoService({Dio? dio}) : _dio = dio ?? Dio() {
     // configuración para la petición
     _dio.options.connectTimeout = Duration(seconds: ApiConfig.connectTimeoutSeconds);
     _dio.options.receiveTimeout = Duration(seconds: ApiConfig.receiveTimeoutSeconds);
@@ -42,10 +42,10 @@ class LimpiezaService {
     }
   }
 
-  /// Método para obtener el listado de limpiezas por estatus
+  /// Método para obtener el listado de empleados por hotel
   /// Requiere token de autenticación en el header
-  /// Parámetro: estatusLimpiezaId del estatus a filtrar
-  Future<Response> fetchLimpiezasPorEstatus(int estatusLimpiezaId) async {
+  /// Parámetro: hotelId del hotel del cual obtener empleados
+  Future<Response> fetchEmpleadosPorHotel(int hotelId) async {
     // Obtener token de la sesión
     final token = await _getToken();
 
@@ -58,7 +58,7 @@ class LimpiezaService {
     }
 
     // Construir la URL
-    final url = baseUrl + EndpointsLimpieza.estatus(estatusLimpiezaId);
+    final url = baseUrl + EndpointsEmpleado.empleadoHotel(hotelId);
 
     // Configurar headers con el token de autenticación
     final headers = {
@@ -79,48 +79,10 @@ class LimpiezaService {
     }
   }
 
-  /// Método para actualizar una limpieza
+  /// Método para obtener el listado de hoteles por empleado
   /// Requiere token de autenticación en el header
-  /// Parámetros: limpiezaId de la limpieza a actualizar y Map con los datos a actualizar
-  Future<Response> updateLimpieza(int limpiezaId, Map<String, dynamic> data) async {
-    // Obtener token de la sesión
-    final token = await _getToken();
-
-    if (token == null) {
-      throw DioException(
-        requestOptions: RequestOptions(path: ''),
-        error: 'No hay token de autenticación disponible',
-        type: DioExceptionType.unknown,
-      );
-    }
-
-    // Construir la URL
-    final url = baseUrl + EndpointsLimpieza.detail(limpiezaId);
-
-    // Configurar headers con el token de autenticación
-    final headers = {
-      'Authorization': 'Bearer $token',
-    };
-
-    // Hacer la petición PUT
-    try {
-      final response = await _dio.put(
-        url,
-        data: data,
-        options: Options(headers: headers),
-      );
-
-      return response; // Respuesta del API
-    } catch (e) {
-      // Manejo de errores
-      rethrow;
-    }
-  }
-
-  /// Método para crear una nueva limpieza
-  /// Requiere token de autenticación en el header
-  /// Parámetro: Map con los datos de la limpieza a crear
-  Future<Response> crearLimpieza(Map<String, dynamic> limpiezaData) async {
+  /// Parámetro: empleadoId del empleado del cual obtener hoteles
+  Future<Response> fetchHotelesPorEmpleado(int empleadoId) async {
     final token = await _getToken();
     if (token == null) {
       throw DioException(
@@ -130,15 +92,11 @@ class LimpiezaService {
       );
     }
 
-    final url = baseUrl + EndpointsLimpieza.list;
+    final url = baseUrl + EndpointsEmpleado.hotelesPorEmpleado(empleadoId);
     final headers = {'Authorization': 'Bearer $token'};
 
     try {
-      final response = await _dio.post(
-        url,
-        data: limpiezaData,
-        options: Options(headers: headers),
-      );
+      final response = await _dio.get(url, options: Options(headers: headers));
       return response;
     } catch (e) {
       rethrow;

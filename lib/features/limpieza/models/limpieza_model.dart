@@ -124,7 +124,9 @@ class Empleado {
       fechaNacimiento: json['fecha_nacimiento'] as String? ?? '',
       rfc: json['rfc'] as String? ?? '',
       curp: json['curp'] as String? ?? '',
-      domicilio: Domicilio.fromJson(json['domicilio'] as Map<String, dynamic>? ?? {}),
+      domicilio: json['domicilio'] != null && json['domicilio'] is Map<String, dynamic>
+          ? Domicilio.fromJson(json['domicilio'] as Map<String, dynamic>)
+          : Domicilio(calle: '', numeroExterior: '', colonia: '', municipio: '', estado: '', codigoPostal: '', paisId: 0),
     );
   }
 
@@ -177,7 +179,9 @@ class Limpieza {
       empleadoId: json['empleado_id'] as int? ?? 0,
       tipoLimpieza: TipoLimpieza.fromJson(json['tipo_limpieza'] as Map<String, dynamic>? ?? {}),
       habitacionArea: HabitacionArea.fromJson(json['habitacion_area'] as Map<String, dynamic>? ?? {}),
-      empleado: Empleado.fromJson(json['empleado'] as Map<String, dynamic>? ?? {}),
+      empleado: json['empleado'] != null && json['empleado'] is Map<String, dynamic>
+          ? Empleado.fromJson(json['empleado'] as Map<String, dynamic>)
+          : Empleado(claveEmpleado: '', nombre: '', apellidoPaterno: '', apellidoMaterno: '', fechaNacimiento: '', rfc: '', curp: '', domicilio: Domicilio(calle: '', numeroExterior: '', colonia: '', municipio: '', estado: '', codigoPostal: '', paisId: 0)),
     );
   }
 

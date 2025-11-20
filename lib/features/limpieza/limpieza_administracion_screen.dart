@@ -4,6 +4,7 @@ import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
 import 'controllers/limpieza_controller.dart';
 import 'models/limpieza_model.dart';
+import 'limpieza_asignar_screen.dart';
 import '../login/login_screen.dart';
 
 /// Pantalla de administración de limpiezas
@@ -242,19 +243,27 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.cleaning_services_outlined,
-            size: 80,
-            color: const Color(0xFF667eea).withOpacity(0.3),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF4CAF50).withOpacity(0.1),
+            ),
+            child: Icon(
+              Icons.cleaning_services,
+              size: 40,
+              color: const Color(0xFF4CAF50).withOpacity(0.5),
+            ),
           ),
           const SizedBox(height: 24),
           Text(
             'No hay limpiezas ${_estatusOptions.firstWhere((e) => e['id'] == _selectedEstatus)['nombre'].toLowerCase()}',
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               color: Color(0xFF6b7280),
-              letterSpacing: -0.3,
+              letterSpacing: -0.2,
             ),
             textAlign: TextAlign.center,
           ),
@@ -266,7 +275,7 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
   /// Widget para mostrar lista de limpiezas
   Widget _buildLimpiezasList(LimpiezaController controller) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: controller.limpiezas.length,
       itemBuilder: (context, index) {
         final limpieza = controller.limpiezas[index];
@@ -278,209 +287,198 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
   /// Widget para construir una card de limpieza
   Widget _buildLimpiezaCard(Limpieza limpieza) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Primera fila: Habitación/Área y estatus
-            Row(
-              children: [
-                // Ícono de habitación
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF667eea).withOpacity(0.1),
-                  ),
-                  child: const Icon(
-                    Icons.room,
-                    color: Color(0xFF667eea),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Información de habitación
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        limpieza.habitacionArea.nombreClave,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1a1a1a),
-                        ),
-                      ),
-                      Text(
-                        limpieza.habitacionArea.descripcion,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6b7280),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                // Badge de estatus
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Color(limpieza.estatusLimpiezaColor).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Color(limpieza.estatusLimpiezaColor).withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    limpieza.estatusLimpiezaTexto,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Color(limpieza.estatusLimpiezaColor),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+      child: InkWell(
+        onTap: () async {
+          // Solo permitir navegación si la limpieza está en estatus Pendiente (1)
+          if (limpieza.estatusLimpiezaId != 1) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Solo se pueden asignar limpiezas en estatus Pendiente'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
 
-            // Tipo de limpieza
-            Row(
-              children: [
-                const Icon(
+          // Navegar a la pantalla de asignación
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LimpiezaAsignarScreen(
+                limpiezaId: limpieza.idLimpieza,
+                estatusLimpiezaId: limpieza.estatusLimpiezaId,
+              ),
+            ),
+          );
+
+          // Si se actualizó la limpieza, refrescar el listado
+          if (result == true && mounted) {
+            final controller = Provider.of<LimpiezaController>(context, listen: false);
+            controller.fetchLimpiezasPorEstatus(_selectedEstatus);
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Ícono principal de limpieza
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                ),
+                child: const Icon(
                   Icons.cleaning_services,
-                  size: 16,
-                  color: Color(0xFF6b7280),
+                  color: Color(0xFF4CAF50),
+                  size: 24,
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    limpieza.tipoLimpieza.nombreTipo,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF1a1a1a),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+              ),
+              const SizedBox(width: 16),
 
-            // Empleado asignado
-            Row(
-              children: [
-                const Icon(
-                  Icons.person,
-                  size: 16,
-                  color: Color(0xFF6b7280),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    limpieza.empleado.nombreCompleto,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF1a1a1a),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Fechas
-            Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Color(0xFF6b7280),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Programada: ${limpieza.fechaProgramadaFormateada}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6b7280),
-                        ),
+              // Información principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Habitación/Área
+                    Text(
+                      limpieza.habitacionArea.nombreClave,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1a1a1a),
+                        letterSpacing: -0.3,
                       ),
-                      if (limpieza.fechaTerminoFormateada != null)
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Tipo de limpieza y empleado en una fila
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.category,
+                          size: 14,
+                          color: const Color(0xFF6b7280),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            limpieza.tipoLimpieza.nombreTipo,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6b7280),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: const Color(0xFF6b7280),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            limpieza.empleado.nombre,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6b7280),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Fecha programada
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: const Color(0xFF6b7280),
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          'Terminada: ${limpieza.fechaTerminoFormateada}',
+                          limpieza.fechaProgramadaFormateada,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF6b7280),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // Descripción (si existe)
-            if (limpieza.descripcion != null && limpieza.descripcion!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                limpieza.descripcion!,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF6b7280),
-                ),
-              ),
-            ],
-
-            // Comentarios/Observaciones (si existen)
-            if (limpieza.comentariosObservaciones != null && limpieza.comentariosObservaciones!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.comment,
-                      size: 16,
-                      color: Color(0xFF6b7280),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        limpieza.comentariosObservaciones!,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF6b7280),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
               ),
+
+              const SizedBox(width: 12),
+
+              // Badge de estatus y indicador de acción
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Badge de estatus
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Color(limpieza.estatusLimpiezaColor).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Color(limpieza.estatusLimpiezaColor).withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      limpieza.estatusLimpiezaTexto,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(limpieza.estatusLimpiezaColor),
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                  ),
+
+                  // Indicador de acción disponible (solo para pendientes)
+                  if (limpieza.estatusLimpiezaId == 1) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Toca para asignar',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ],
-          ],
+          ),
         ),
       ),
     );
