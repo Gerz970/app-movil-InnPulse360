@@ -106,6 +106,12 @@ app.*.map.json
 # Coverage
 coverage/
 
+# Firebase configuration files (pueden contener información sensible)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist
+
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
