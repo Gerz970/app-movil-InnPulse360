@@ -51,5 +51,48 @@ class HabitacionAreaService {
       rethrow;
     }
   }
+
+  /// Método para obtener habitaciones con estado (reservaciones y limpiezas)
+  /// Requiere token de autenticación en el header
+  /// Parámetro: pisoId del piso del cual obtener habitaciones con estado
+  Future<Response> fetchHabitacionesConEstadoPorPiso(int pisoId) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + 'habitacion-area/con-estado/$pisoId';
+    final headers = {'Authorization': 'Bearer $token'};
+
+    print('🔍 [HabitacionAreaService] Llamando a: $url');
+    print('🔍 [HabitacionAreaService] Piso ID: $pisoId');
+    print('🔍 [HabitacionAreaService] Headers: ${headers.keys}');
+
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      
+      print('✅ [HabitacionAreaService] Respuesta recibida:');
+      print('   Status Code: ${response.statusCode}');
+      print('   Data Type: ${response.data.runtimeType}');
+      print('   Data Length: ${response.data is List ? (response.data as List).length : 'N/A'}');
+      if (response.data is List && (response.data as List).isNotEmpty) {
+        print('   Primer elemento: ${(response.data as List).first}');
+      }
+      
+      return response;
+    } catch (e) {
+      print('❌ [HabitacionAreaService] Error: $e');
+      if (e is DioException) {
+        print('   Status Code: ${e.response?.statusCode}');
+        print('   Response Data: ${e.response?.data}');
+        print('   Request Path: ${e.requestOptions.path}');
+      }
+      rethrow;
+    }
+  }
 }
 

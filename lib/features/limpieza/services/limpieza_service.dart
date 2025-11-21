@@ -144,4 +144,48 @@ class LimpiezaService {
       rethrow;
     }
   }
+
+  /// Método para crear múltiples limpiezas en una sola petición
+  /// Requiere token de autenticación en el header
+  /// Parámetro: Lista de Maps con los datos de las limpiezas a crear
+  Future<Response> crearLimpiezasMasivo(List<Map<String, dynamic>> limpiezasData) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + 'limpiezas/masivo';
+    final headers = {'Authorization': 'Bearer $token'};
+
+    print('🔍 [LimpiezaService] Llamando a: $url');
+    print('🔍 [LimpiezaService] Datos a enviar: ${limpiezasData.length} limpiezas');
+    print('🔍 [LimpiezaService] Primer elemento: ${limpiezasData.isNotEmpty ? limpiezasData.first : 'N/A'}');
+
+    try {
+      final response = await _dio.post(
+        url,
+        data: limpiezasData,
+        options: Options(headers: headers),
+      );
+      
+      print('✅ [LimpiezaService] Respuesta recibida:');
+      print('   Status Code: ${response.statusCode}');
+      print('   Data Type: ${response.data.runtimeType}');
+      print('   Data: ${response.data}');
+      
+      return response;
+    } catch (e) {
+      print('❌ [LimpiezaService] Error: $e');
+      if (e is DioException) {
+        print('   Status Code: ${e.response?.statusCode}');
+        print('   Response Data: ${e.response?.data}');
+        print('   Request Path: ${e.requestOptions.path}');
+      }
+      rethrow;
+    }
+  }
 }

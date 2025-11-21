@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart'; // Para uso de ChangeNotifier
 import '../services/limpieza_service.dart'; // para conexion con servicio
 import '../services/empleado_service.dart'; // para conexion con servicio de empleados
 import '../services/habitacion_area_service.dart'; // para conexion con servicio de habitaciones
-import '../models/limpieza_model.dart' hide HabitacionArea; // modelo de Limpieza
+import '../services/tipo_limpieza_service.dart'; // para conexion con servicio de tipos de limpieza
+import '../models/limpieza_model.dart' hide HabitacionArea, TipoLimpieza; // modelo de Limpieza
 import '../models/empleado_simple_model.dart'; // modelo de EmpleadoSimple
 import '../models/habitacion_area_model.dart'; // modelo de HabitacionArea
+import '../models/habitacion_area_con_estado_model.dart'; // modelo de HabitacionAreaConEstado
+import '../models/tipo_limpieza_model.dart'; // modelo de TipoLimpieza
 import '../../hoteles/models/hotel_model.dart'; // modelo de Hotel
 import '../../pisos/models/piso_model.dart'; // modelo de Piso
 import '../../pisos/services/piso_service.dart'; // servicio de pisos
@@ -21,6 +24,19 @@ class LimpiezaController extends ChangeNotifier {
   final HabitacionAreaService _habitacionAreaService = HabitacionAreaService();
   // Instancia de PisoService
   final PisoService _pisoService = PisoService();
+  // Instancia de TipoLimpiezaService
+  final TipoLimpiezaService _tipoLimpiezaService = TipoLimpiezaService();
+
+  /// Método helper para notificar listeners de forma segura
+  void _safeNotifyListeners() {
+    if (hasListeners) {
+      try {
+        notifyListeners();
+      } catch (e) {
+        print('Error al notificar listeners: $e');
+      }
+    }
+  }
 
   // Estados privados para listado
   bool _isLoading = false; // Estado de carga
@@ -56,6 +72,20 @@ class LimpiezaController extends ChangeNotifier {
   bool _isLoadingHabitaciones = false;
   String? _habitacionesErrorMessage;
 
+  // Estados para habitaciones con estado
+  List<HabitacionAreaConEstado> _habitacionesConEstado = [];
+  bool _isLoadingHabitacionesConEstado = false;
+  String? _habitacionesConEstadoErrorMessage;
+
+  // Estados para tipos de limpieza
+  List<TipoLimpieza> _tiposLimpieza = [];
+  bool _isLoadingTiposLimpieza = false;
+  String? _tiposLimpiezaErrorMessage;
+
+  // Estados para creación masiva
+  bool _isCreatingMasivo = false;
+  String? _createMasivoErrorMessage;
+
   // Getters para listado
   bool get isLoading => _isLoading;
   List<Limpieza> get limpiezas => _limpiezas;
@@ -90,6 +120,20 @@ class LimpiezaController extends ChangeNotifier {
   List<HabitacionArea> get habitacionesDisponibles => _habitacionesDisponibles;
   bool get isLoadingHabitaciones => _isLoadingHabitaciones;
   String? get habitacionesErrorMessage => _habitacionesErrorMessage;
+
+  // Getters para habitaciones con estado
+  List<HabitacionAreaConEstado> get habitacionesConEstado => _habitacionesConEstado;
+  bool get isLoadingHabitacionesConEstado => _isLoadingHabitacionesConEstado;
+  String? get habitacionesConEstadoErrorMessage => _habitacionesConEstadoErrorMessage;
+
+  // Getters para tipos de limpieza
+  List<TipoLimpieza> get tiposLimpieza => _tiposLimpieza;
+  bool get isLoadingTiposLimpieza => _isLoadingTiposLimpieza;
+  String? get tiposLimpiezaErrorMessage => _tiposLimpiezaErrorMessage;
+
+  // Getters para creación masiva
+  bool get isCreatingMasivo => _isCreatingMasivo;
+  String? get createMasivoErrorMessage => _createMasivoErrorMessage;
 
   /// Método para obtener el listado de limpiezas por estatus
   Future<void> fetchLimpiezasPorEstatus(int estatusLimpiezaId) async {
@@ -410,18 +454,101 @@ class LimpiezaController extends ChangeNotifier {
     }
   }
 
+  /// Método para obtener tipos de limpieza
+  Future<void> fetchTiposLimpieza() async {
+    print('🚀 [LimpiezaController] fetchTiposLimpieza() llamado');
+    _isLoadingTiposLimpieza = true;
+    _tiposLimpiezaErrorMessage = null;
+    _tiposLimpieza = [];
+    _safeNotifyListeners();
+
+    try {
+      print('📡 [LimpiezaController] Llamando a _tipoLimpiezaService.fetchTiposLimpieza()');
+      final response = await _tipoLimpiezaService.fetchTiposLimpieza();
+      print('✅ [LimpiezaController] Respuesta recibida del servicio');
+      
+      if (response.data != null && response.data is List) {
+        _tiposLimpieza = (response.data as List)
+            .map((json) => TipoLimpieza.fromJson(json as Map<String, dynamic>))
+            .toList();
+        print('✅ [LimpiezaController] ${_tiposLimpieza.length} tipos de limpieza cargados');
+      } else {
+        _tiposLimpieza = [];
+        print('⚠️ [LimpiezaController] Respuesta vacía o formato incorrecto');
+      }
+      _isLoadingTiposLimpieza = false;
+      _safeNotifyListeners();
+    } catch (e) {
+      print('❌ [LimpiezaController] Error al cargar tipos de limpieza: $e');
+      _isLoadingTiposLimpieza = false;
+      _tiposLimpiezaErrorMessage = _handleDioError(e, 'Error al cargar tipos de limpieza');
+      _safeNotifyListeners();
+    }
+  }
+
+  /// Método para obtener habitaciones con estado por piso
+  Future<void> fetchHabitacionesConEstadoPorPiso(int pisoId) async {
+    _isLoadingHabitacionesConEstado = true;
+    _habitacionesConEstadoErrorMessage = null;
+    _habitacionesConEstado = [];
+    _safeNotifyListeners();
+
+    try {
+      final response = await _habitacionAreaService.fetchHabitacionesConEstadoPorPiso(pisoId);
+      if (response.data != null && response.data is List) {
+        _habitacionesConEstado = (response.data as List)
+            .map((json) => HabitacionAreaConEstado.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        _habitacionesConEstado = [];
+      }
+      _isLoadingHabitacionesConEstado = false;
+      _safeNotifyListeners();
+    } catch (e) {
+      _isLoadingHabitacionesConEstado = false;
+      _habitacionesConEstadoErrorMessage = _handleDioError(e, 'Error al cargar habitaciones con estado');
+      _safeNotifyListeners();
+    }
+  }
+
+  /// Método para crear múltiples limpiezas en una sola petición
+  Future<bool> crearLimpiezasMasivo(List<Map<String, dynamic>> limpiezasData) async {
+    _isCreatingMasivo = true;
+    _createMasivoErrorMessage = null;
+    _safeNotifyListeners();
+
+    try {
+      final response = await _limpiezaService.crearLimpiezasMasivo(limpiezasData);
+      _isCreatingMasivo = false;
+      _safeNotifyListeners();
+      print("Limpiezas creadas masivamente correctamente");
+      print('Status code: ${response.statusCode}');
+      print('Limpiezas creadas: ${(response.data as List).length}');
+      return true;
+    } catch (e) {
+      _isCreatingMasivo = false;
+      _createMasivoErrorMessage = _handleDioError(e, 'Error al crear limpiezas masivamente');
+      _safeNotifyListeners();
+      return false;
+    }
+  }
+
   /// Método para limpiar estados de creación
   void limpiarEstadosCreacion() {
     _hotelesEmpleado = [];
     _pisos = [];
     _habitacionesDisponibles = [];
+    _habitacionesConEstado = [];
     _isLoadingHotelesEmpleado = false;
     _isLoadingPisos = false;
     _isLoadingHabitaciones = false;
+    _isLoadingHabitacionesConEstado = false;
     _hotelesEmpleadoErrorMessage = null;
     _pisosErrorMessage = null;
     _habitacionesErrorMessage = null;
+    _habitacionesConEstadoErrorMessage = null;
     _createErrorMessage = null;
-    notifyListeners();
+    _createMasivoErrorMessage = null;
+    _safeNotifyListeners();
   }
 }
