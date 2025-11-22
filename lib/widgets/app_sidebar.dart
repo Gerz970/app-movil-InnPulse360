@@ -28,17 +28,43 @@ class AppSidebar extends StatelessWidget {
         // Obtener datos del usuario del loginResponse
         final loginResponse = authController.loginResponse;
 
-        // Extraer el campo "login" del usuario
+        // Extraer el campo "login" y "correo_electronico" del usuario
         String userLogin = 'Usuario';
+        String userEmail = 'Usuario activo';
+        
         if (loginResponse != null) {
-          userLogin = _extractString(loginResponse, 'login');
+          // Intentar obtener desde objeto usuario (estructura del backend)
+          if (loginResponse['usuario'] is Map<String, dynamic>) {
+            final usuarioObj = loginResponse['usuario'] as Map<String, dynamic>;
+            userLogin = _extractString(usuarioObj, 'login');
+            final email = _extractString(usuarioObj, 'correo_electronico');
+            if (email != 'Usuario' && email.isNotEmpty) {
+              userEmail = email;
+            }
+          }
+          
+          // Si no encontramos en objeto usuario, intentar desde raíz
+          if (userLogin == 'Usuario') {
+            userLogin = _extractString(loginResponse, 'login');
+          }
           if (userLogin == 'Usuario') {
             userLogin = _extractString(loginResponse, 'username');
           }
           if (userLogin == 'Usuario') {
             userLogin = _extractString(loginResponse, 'usuario');
           }
+          
+          // Intentar obtener correo desde raíz si no se encontró en usuario
+          if (userEmail == 'Usuario activo') {
+            final email = _extractString(loginResponse, 'correo_electronico');
+            if (email != 'Usuario' && email.isNotEmpty) {
+              userEmail = email;
+            }
+          }
         }
+
+        // Verificar si el usuario tiene el rol "Cliente"
+        final esCliente = _esUsuarioCliente(loginResponse);
 
         return Drawer(
           width: 280,
@@ -91,13 +117,15 @@ class AppSidebar extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Usuario activo',
+                                userEmail,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
                                   color: const Color(0xFF6b7280),
                                   letterSpacing: -0.2,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -112,12 +140,14 @@ class AppSidebar extends StatelessWidget {
                   ),
                 ),
                 // === SELECTOR DE HOTEL ===
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  child: Consumer<HotelController>(
+                // Solo mostrar si el usuario NO es cliente
+                if (!esCliente)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Consumer<HotelController>(
                     builder: (context, hotelController, child) {
                       // Mientras está cargando hoteles
                       if (hotelController.isLoading) {
@@ -447,5 +477,27 @@ class AppSidebar extends StatelessWidget {
               ),
       ),
     );
+  }
+
+  /// Verificar si el usuario tiene el rol "Cliente"
+  /// Compara el nombre del rol de forma case-insensitive
+  bool _esUsuarioCliente(Map<String, dynamic>? loginResponse) {
+    if (loginResponse == null) return false;
+    
+    // Obtener la lista de roles
+    final roles = loginResponse['roles'];
+    if (roles == null || roles is! List) return false;
+    
+    // Verificar si alguno de los roles es "Cliente"
+    for (var rol in roles) {
+      if (rol is Map<String, dynamic>) {
+        final nombreRol = rol['rol'];
+        if (nombreRol is String && nombreRol.toLowerCase() == 'cliente') {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 }

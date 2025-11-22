@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
 import '../features/perfil/screens/perfil_screen.dart';
+import '../features/login/login_screen.dart';
 
 /// Widget de header global reutilizable para toda la aplicación
 /// Muestra información del usuario, foto de perfil y botones de acción
@@ -236,13 +237,7 @@ class AppHeader extends StatelessWidget {
                         ),
                       );
                     } else if (value == 'cerrar_sesion') {
-                      // Funcionalidad de cerrar sesión ya está en la pantalla de perfil
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PerfilScreen(),
-                        ),
-                      );
+                      _confirmarCerrarSesion(context, authController);
                     }
                   },
                 ),
@@ -338,6 +333,38 @@ class AppHeader extends StatelessWidget {
                   size: 28,
                 ),
               ),
+      ),
+    );
+  }
+
+  /// Confirmar y ejecutar cierre de sesión
+  void _confirmarCerrarSesion(BuildContext context, AuthController authController) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await authController.logout();
+              
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
       ),
     );
   }
