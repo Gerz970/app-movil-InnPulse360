@@ -13,4 +13,8 @@ class EndpointsReservacion {
 
   // Método helper para construir endpoint de habitaciones reservadas por cliente
   static String habitacionesReservadasCliente(int clienteId) => "reservaciones/cliente/$clienteId/habitaciones";
+
+   // Método helper para construir endpoint de habitaciones reservadas por usuario
+  static String reservasCliente(int clienteId) => "reservaciones/cliente/$clienteId";
+
 }
