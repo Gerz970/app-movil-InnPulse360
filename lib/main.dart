@@ -12,6 +12,7 @@ import 'features/incidencias/controllers/incidencia_controller.dart';
 import 'features/perfil/controllers/perfil_controller.dart';
 import 'features/limpieza/controllers/limpieza_controller.dart';
 import 'features/limpieza/limpieza_detail_screen.dart';
+import 'features/reservas/controllers/reservas_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -155,7 +156,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PisoController()),
         ChangeNotifierProvider(create: (_) => PerfilController()),
         ChangeNotifierProvider(create: (_) => LimpiezaController()),
-
+        ChangeNotifierProvider(create: (_) => ReservacionController()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
