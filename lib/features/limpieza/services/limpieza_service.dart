@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart'; // se importa libreria para hacer peticiones HTTP al backend
+import 'package:image_picker/image_picker.dart'; // para XFile que funciona en web y móvil
 import '../../../api/api_config.dart'; // importar configuracion del api
 import '../../../api/endpoints_limpieza.dart'; // importar endpoints de limpieza
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
@@ -75,6 +76,33 @@ class LimpiezaService {
       return response; // Respuesta del API
     } catch (e) {
       // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Método para obtener limpiezas por empleado_id
+  /// Requiere token de autenticación en el header
+  /// Parámetro: empleadoId del empleado
+  Future<Response> fetchLimpiezasPorEmpleado(int empleadoId) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.porEmpleado(empleadoId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
       rethrow;
     }
   }
@@ -185,6 +213,239 @@ class LimpiezaService {
         print('   Response Data: ${e.response?.data}');
         print('   Request Path: ${e.requestOptions.path}');
       }
+      rethrow;
+    }
+  }
+
+  /// Método para obtener el detalle completo de una limpieza
+  /// Requiere token de autenticación en el header
+  /// Parámetro: limpiezaId de la limpieza
+  Future<Response> fetchLimpiezaDetail(int limpiezaId) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.detail(limpiezaId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método para iniciar una limpieza
+  /// Actualiza estatus a 2 (En Progreso) y fecha_inicio_limpieza
+  Future<Response> iniciarLimpieza(int limpiezaId, DateTime fechaInicio) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.detail(limpiezaId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    // Formatear fecha en formato ISO 8601
+    final fechaInicioStr = fechaInicio.toUtc().toIso8601String();
+
+    final data = {
+      'estatus_limpieza_id': 2,
+      'fecha_inicio_limpieza': fechaInicioStr,
+    };
+
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método para cancelar una limpieza
+  /// Actualiza estatus a 4 (Cancelada) y comentarios_observaciones
+  Future<Response> cancelarLimpieza(int limpiezaId, String comentario) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.detail(limpiezaId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    final data = {
+      'estatus_limpieza_id': 4,
+      'comentarios_observaciones': comentario,
+    };
+
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método para terminar una limpieza
+  /// Actualiza estatus a 3 (Completada), fecha_termino y comentarios_observaciones
+  Future<Response> terminarLimpieza(int limpiezaId, DateTime fechaTermino, String comentario) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.detail(limpiezaId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    // Formatear fecha en formato ISO 8601
+    final fechaTerminoStr = fechaTermino.toUtc().toIso8601String();
+
+    final data = {
+      'estatus_limpieza_id': 3,
+      'fecha_termino': fechaTerminoStr,
+      'comentarios_observaciones': comentario,
+    };
+
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método para subir una foto a la galería de una limpieza
+  /// Requiere token de autenticación en el header
+  /// Tipo de cuerpo: multipart/form-data
+  /// Parámetros: limpiezaId, xFile (XFile que funciona en web y móvil) y tipo ("antes" o "despues")
+  Future<Response> uploadFotoGaleria(int limpiezaId, XFile xFile, String tipo) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.galeria(limpiezaId, tipo);
+
+    // Obtener bytes del archivo usando XFile (funciona tanto en web como en móvil)
+    final fileBytes = await xFile.readAsBytes();
+    final filename = xFile.name.isNotEmpty 
+        ? xFile.name 
+        : 'limpieza_${limpiezaId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    // Crear FormData con el archivo usando bytes
+    FormData formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        fileBytes,
+        filename: filename,
+      ),
+    });
+
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    try {
+      final response = await _dio.post(
+        url,
+        data: formData,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método para obtener la galería de fotos de una limpieza
+  /// Requiere token de autenticación en el header
+  /// Parámetros: limpiezaId y tipo opcional ("antes", "despues" o null para ambas)
+  Future<Response> fetchGaleria(int limpiezaId, String? tipo) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Si tipo es null, no incluir el parámetro en la URL
+    final url = tipo != null
+        ? baseUrl + EndpointsLimpieza.galeria(limpiezaId, tipo)
+        : baseUrl + 'limpiezas/$limpiezaId/galeria';
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Método para eliminar una foto de la galería de una limpieza
+  /// Requiere token de autenticación en el header
+  /// Parámetros: limpiezaId, nombreArchivo y tipo ("antes" o "despues")
+  Future<Response> deleteFotoGaleria(int limpiezaId, String nombreArchivo, String tipo) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsLimpieza.deleteFoto(limpiezaId, nombreArchivo, tipo);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.delete(
+        url,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
       rethrow;
     }
   }

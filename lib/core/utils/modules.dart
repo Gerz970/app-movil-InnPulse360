@@ -3,6 +3,7 @@ import '../../features/incidencias/incidencias_list_screen.dart';
 import '../../features/clientes/clientes_list_screen.dart';
 import '../../features/hoteles/hotels_list_screen.dart';
 import '../../features/limpieza/limpieza_administracion_screen.dart';
+import '../../features/limpieza/limpieza_camarista_screen.dart';
 
 
 final Map<String, Widget Function()> moduleScreens = {
@@ -11,4 +12,5 @@ final Map<String, Widget Function()> moduleScreens = {
   'hotel_administracion_screen': () => const HotelsListScreen(),
   'incidencias_cliente_screen': () => const IncidenciasListScreen(),
   'limpieza_administracion_screen': () => const LimpiezaAdministracionScreen(),
+  'limpieza_camarista_screen': () => const LimpiezaCamaristaScreen(),
 };

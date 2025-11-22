@@ -296,9 +296,10 @@ class FCMService {
 
     switch (tipo) {
       case 'limpieza_asignada':
+      case 'limpieza_completada':
         final limpiezaId = data['limpieza_id'] as String?;
         if (limpiezaId != null) {
-          print('📱 Navegando a limpieza_detail con ID: $limpiezaId');
+          print('📱 Navegando a limpieza_detail con ID: $limpiezaId (tipo: $tipo)');
           // La navegación real se manejará desde el callback configurado
           // o desde el widget que escuche el callback
         }

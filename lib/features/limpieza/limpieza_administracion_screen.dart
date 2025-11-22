@@ -276,15 +276,10 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
 
   /// Widget para mostrar lista de limpiezas
   Widget _buildLimpiezasList(LimpiezaController controller) {
-    return GridView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.70,
-      ),
       itemCount: controller.limpiezas.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final limpieza = controller.limpiezas[index];
         return _buildLimpiezaCard(limpieza);
@@ -296,16 +291,13 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
   Widget _buildLimpiezaCard(Limpieza limpieza) {
     final estatusColor = Color(limpieza.estatusLimpiezaColor);
     final isPendiente = limpieza.estatusLimpiezaId == 1;
+    final isCancelada = limpieza.estatusLimpiezaId == 4;
     
     return Card(
       margin: EdgeInsets.zero,
-      elevation: isPendiente ? 4 : 2,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isPendiente ? estatusColor.withOpacity(0.3) : Colors.transparent,
-          width: isPendiente ? 2 : 0,
-        ),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
         onTap: () async {
@@ -337,32 +329,31 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
             controller.fetchLimpiezasPorEstatus(_selectedEstatus);
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: isPendiente
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      estatusColor.withOpacity(0.05),
-                      Colors.white,
-                    ],
-                  )
-                : null,
+            borderRadius: BorderRadius.circular(12),
+            border: Border(
+              left: BorderSide(
+                color: estatusColor,
+                width: 4,
+              ),
+            ),
+            color: isCancelada 
+                ? Colors.grey.shade50 
+                : (isPendiente 
+                    ? estatusColor.withOpacity(0.02) 
+                    : Colors.white),
           ),
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              // Header con icono y estatus
+              // Header con icono, estatus y flecha
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: estatusColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -370,120 +361,134 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
                     child: Icon(
                       Icons.cleaning_services_rounded,
                       color: estatusColor,
-                      size: 18,
+                      size: 20,
                     ),
                   ),
-                  Flexible(
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: estatusColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         limpieza.estatusLimpiezaTexto,
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: estatusColor,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
+                  if (isPendiente)
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: Colors.grey.shade400,
+                    ),
                 ],
               ),
               
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               
-              // Habitación/Área - Destacado
+              // Habitación/Área - Título principal
               Text(
                 limpieza.habitacionArea.nombreClave,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1a1a1a),
+                  color: isCancelada ? Colors.grey.shade600 : const Color(0xFF1a1a1a),
                   letterSpacing: -0.5,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
               
+              // Descripción de habitación (si existe)
               if (limpieza.habitacionArea.descripcion.isNotEmpty) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   limpieza.habitacionArea.descripcion,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 14,
                     color: Colors.grey.shade600,
+                    height: 1.4,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
               
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               
-              // Información detallada
-              Flexible(
-                child: _buildInfoRow(
-                  Icons.category_rounded,
-                  limpieza.tipoLimpieza.nombreTipo,
+              // Sección de detalles con fondo
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      Icons.category_rounded,
+                      'Tipo',
+                      limpieza.tipoLimpieza.nombreTipo,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildDetailRow(
+                      Icons.person_outline_rounded,
+                      'Empleado',
+                      limpieza.empleado.nombre.isNotEmpty 
+                          ? limpieza.empleado.nombre 
+                          : 'Sin asignar',
+                      isSecondary: limpieza.empleado.nombre.isEmpty,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildDetailRow(
+                      Icons.schedule_rounded,
+                      'Fecha Programada',
+                      limpieza.fechaProgramadaFormateada,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 5),
-              Flexible(
-                child: _buildInfoRow(
-                  Icons.person_outline_rounded,
-                  limpieza.empleado.nombre.isNotEmpty 
-                      ? limpieza.empleado.nombre 
-                      : 'Sin asignar',
-                ),
-              ),
-              const SizedBox(height: 5),
-              Flexible(
-                child: _buildInfoRow(
-                  Icons.schedule_rounded,
-                  limpieza.fechaProgramadaFormateada,
-                ),
-              ),
               
-              const SizedBox(height: 6),
-              
-              // Indicador de acción (solo para pendientes)
-              if (isPendiente)
+              // Botón de acción para pendientes
+              if (isPendiente) ...[
+                const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFF4CAF50).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.touch_app_rounded,
-                        size: 12,
+                        size: 16,
                         color: const Color(0xFF4CAF50),
                       ),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(
-                          'Toca para asignar',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF4CAF50),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 6),
+                      Text(
+                        'Toca para asignar',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF4CAF50),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -491,26 +496,43 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
+  /// Widget para construir una fila de detalle mejorada
+  Widget _buildDetailRow(IconData icon, String label, String value, {bool isSecondary = false}) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
-          size: 14,
-          color: Colors.grey.shade600,
+          size: 18,
+          color: isSecondary ? Colors.grey.shade400 : Colors.grey.shade600,
         ),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isSecondary ? Colors.grey.shade500 : const Color(0xFF1a1a1a),
+                  fontWeight: isSecondary ? FontWeight.w400 : FontWeight.w600,
+                  height: 1.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ],

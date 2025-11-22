@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart'; // Para uso de ChangeNotifier
+import 'package:image_picker/image_picker.dart'; // Para XFile que funciona en web y móvil
 import '../services/limpieza_service.dart'; // para conexion con servicio
 import '../services/empleado_service.dart'; // para conexion con servicio de empleados
 import '../services/habitacion_area_service.dart'; // para conexion con servicio de habitaciones
@@ -86,6 +87,20 @@ class LimpiezaController extends ChangeNotifier {
   bool _isCreatingMasivo = false;
   String? _createMasivoErrorMessage;
 
+  // Estados para detalle de limpieza
+  Limpieza? _limpiezaDetail;
+  bool _isLoadingDetail = false;
+  String? _detailErrorMessage;
+
+  // Estados para galería
+  List<Map<String, dynamic>> _galeriaFotos = [];
+  bool _isLoadingGaleria = false;
+  String? _galeriaErrorMessage;
+
+  // Estados para acciones
+  bool _isExecutingAction = false;
+  String? _actionErrorMessage;
+
   // Getters para listado
   bool get isLoading => _isLoading;
   List<Limpieza> get limpiezas => _limpiezas;
@@ -134,6 +149,20 @@ class LimpiezaController extends ChangeNotifier {
   // Getters para creación masiva
   bool get isCreatingMasivo => _isCreatingMasivo;
   String? get createMasivoErrorMessage => _createMasivoErrorMessage;
+
+  // Getters para detalle
+  Limpieza? get limpiezaDetail => _limpiezaDetail;
+  bool get isLoadingDetail => _isLoadingDetail;
+  String? get detailErrorMessage => _detailErrorMessage;
+
+  // Getters para galería
+  List<Map<String, dynamic>> get galeriaFotos => _galeriaFotos;
+  bool get isLoadingGaleria => _isLoadingGaleria;
+  String? get galeriaErrorMessage => _galeriaErrorMessage;
+
+  // Getters para acciones
+  bool get isExecutingAction => _isExecutingAction;
+  String? get actionErrorMessage => _actionErrorMessage;
 
   /// Método para obtener el listado de limpiezas por estatus
   Future<void> fetchLimpiezasPorEstatus(int estatusLimpiezaId) async {
@@ -200,6 +229,62 @@ class LimpiezaController extends ChangeNotifier {
       // Notificar cambio de estado
       notifyListeners();
     }
+  }
+
+  /// Método para obtener limpiezas por empleado_id
+  Future<void> fetchLimpiezasPorEmpleado(int empleadoId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _isNotAuthenticated = false;
+    notifyListeners();
+
+    try {
+      final response = await _limpiezaService.fetchLimpiezasPorEmpleado(empleadoId);
+
+      if (response.data != null && response.data is List) {
+        _limpiezas = (response.data as List)
+            .map((json) => Limpieza.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        _limpiezas = [];
+      }
+
+      _isLoading = false;
+      _errorMessage = null;
+      notifyListeners();
+
+      print("Limpiezas por empleado cargadas correctamente");
+      print('Total de limpiezas: ${_limpiezas.length}');
+    } catch (e) {
+      _isLoading = false;
+
+      if (e is DioException) {
+        if (e.response != null) {
+          final responseData = e.response?.data;
+          final statusCode = e.response?.statusCode;
+
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+               responseData['detail'] == 'Not authenticated')) {
+            _isNotAuthenticated = true;
+            _errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+          } else {
+            _errorMessage = 'Error ${statusCode}: ${e.response?.data}';
+          }
+        } else {
+          _errorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+        }
+      } else {
+        _errorMessage = 'Error: ${e.toString()}';
+      }
+
+      notifyListeners();
+    }
+  }
+
+  /// Método helper para obtener limpiezas filtradas por estatus
+  List<Limpieza> getLimpiezasPorEstatus(int estatusId) {
+    return _limpiezas.where((limpieza) => limpieza.estatusLimpiezaId == estatusId).toList();
   }
 
   /// Método para obtener empleados por hotel y filtrar camaristas
@@ -550,5 +635,137 @@ class LimpiezaController extends ChangeNotifier {
     _createErrorMessage = null;
     _createMasivoErrorMessage = null;
     _safeNotifyListeners();
+  }
+
+  /// Método para cargar el detalle completo de una limpieza
+  Future<void> loadLimpiezaDetail(int limpiezaId) async {
+    _isLoadingDetail = true;
+    _detailErrorMessage = null;
+    _limpiezaDetail = null;
+    _safeNotifyListeners();
+
+    try {
+      final response = await _limpiezaService.fetchLimpiezaDetail(limpiezaId);
+
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        _limpiezaDetail = Limpieza.fromJson(response.data as Map<String, dynamic>);
+      }
+
+      _isLoadingDetail = false;
+      _safeNotifyListeners();
+    } catch (e) {
+      _isLoadingDetail = false;
+      _detailErrorMessage = _handleDioError(e, 'Error al cargar detalle de limpieza');
+      _safeNotifyListeners();
+    }
+  }
+
+  /// Método para iniciar una limpieza
+  Future<bool> iniciarLimpieza(int limpiezaId, DateTime fechaInicio) async {
+    _isExecutingAction = true;
+    _actionErrorMessage = null;
+    _safeNotifyListeners();
+
+    try {
+      await _limpiezaService.iniciarLimpieza(limpiezaId, fechaInicio);
+      _isExecutingAction = false;
+      _safeNotifyListeners();
+      return true;
+    } catch (e) {
+      _isExecutingAction = false;
+      _actionErrorMessage = _handleDioError(e, 'Error al iniciar limpieza');
+      _safeNotifyListeners();
+      return false;
+    }
+  }
+
+  /// Método para cancelar una limpieza
+  Future<bool> cancelarLimpieza(int limpiezaId, String comentario) async {
+    _isExecutingAction = true;
+    _actionErrorMessage = null;
+    _safeNotifyListeners();
+
+    try {
+      await _limpiezaService.cancelarLimpieza(limpiezaId, comentario);
+      _isExecutingAction = false;
+      _safeNotifyListeners();
+      return true;
+    } catch (e) {
+      _isExecutingAction = false;
+      _actionErrorMessage = _handleDioError(e, 'Error al cancelar limpieza');
+      _safeNotifyListeners();
+      return false;
+    }
+  }
+
+  /// Método para terminar una limpieza
+  Future<bool> terminarLimpieza(int limpiezaId, DateTime fechaTermino, String comentario) async {
+    _isExecutingAction = true;
+    _actionErrorMessage = null;
+    _safeNotifyListeners();
+
+    try {
+      await _limpiezaService.terminarLimpieza(limpiezaId, fechaTermino, comentario);
+      _isExecutingAction = false;
+      _safeNotifyListeners();
+      return true;
+    } catch (e) {
+      _isExecutingAction = false;
+      _actionErrorMessage = _handleDioError(e, 'Error al terminar limpieza');
+      _safeNotifyListeners();
+      return false;
+    }
+  }
+
+  /// Método para subir una foto a la galería
+  Future<bool> uploadFoto(int limpiezaId, XFile xFile, String tipo) async {
+    try {
+      await _limpiezaService.uploadFotoGaleria(limpiezaId, xFile, tipo);
+      return true;
+    } catch (e) {
+      print('Error al subir foto: $e');
+      return false;
+    }
+  }
+
+  /// Método para cargar la galería de fotos
+  Future<void> fetchGaleria(int limpiezaId, String? tipo) async {
+    _isLoadingGaleria = true;
+    _galeriaErrorMessage = null;
+    _galeriaFotos = [];
+    _safeNotifyListeners();
+
+    try {
+      final response = await _limpiezaService.fetchGaleria(limpiezaId, tipo);
+
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        if (data['imagenes'] is List) {
+          _galeriaFotos = (data['imagenes'] as List)
+              .map((img) => img as Map<String, dynamic>)
+              .toList();
+        }
+      }
+
+      _isLoadingGaleria = false;
+      _safeNotifyListeners();
+    } catch (e) {
+      _isLoadingGaleria = false;
+      _galeriaErrorMessage = _handleDioError(e, 'Error al cargar galería');
+      _safeNotifyListeners();
+    }
+  }
+
+  /// Método para eliminar una foto de la galería
+  Future<bool> deleteFoto(int limpiezaId, String nombreArchivo, String tipo) async {
+    try {
+      await _limpiezaService.deleteFotoGaleria(limpiezaId, nombreArchivo, tipo);
+      // Recargar galería después de eliminar
+      await fetchGaleria(limpiezaId, null);
+      return true;
+    } catch (e) {
+      print('Error al eliminar foto: $e');
+      return false;
+    }
   }
 }

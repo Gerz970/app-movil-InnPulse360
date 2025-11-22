@@ -140,11 +140,13 @@ class Limpieza {
   final int habitacionAreaId;
   final String? descripcion;
   final String fechaProgramada;
+  final String? fechaInicioLimpieza;
   final String? fechaTermino;
   final int tipoLimpiezaId;
   final int estatusLimpiezaId;
   final String? comentariosObservaciones;
   final int empleadoId;
+  final int? empleadoAsignaId;
 
   // Objetos relacionados
   final TipoLimpieza tipoLimpieza;
@@ -156,11 +158,13 @@ class Limpieza {
     required this.habitacionAreaId,
     this.descripcion,
     required this.fechaProgramada,
+    this.fechaInicioLimpieza,
     this.fechaTermino,
     required this.tipoLimpiezaId,
     required this.estatusLimpiezaId,
     this.comentariosObservaciones,
     required this.empleadoId,
+    this.empleadoAsignaId,
     required this.tipoLimpieza,
     required this.habitacionArea,
     required this.empleado,
@@ -172,11 +176,13 @@ class Limpieza {
       habitacionAreaId: json['habitacion_area_id'] as int? ?? 0,
       descripcion: json['descripcion'] as String?,
       fechaProgramada: json['fecha_programada'] as String? ?? '',
+      fechaInicioLimpieza: json['fecha_inicio_limpieza'] as String?,
       fechaTermino: json['fecha_termino'] as String?,
       tipoLimpiezaId: json['tipo_limpieza_id'] as int? ?? 0,
       estatusLimpiezaId: json['estatus_limpieza_id'] as int? ?? 0,
       comentariosObservaciones: json['comentarios_observaciones'] as String?,
       empleadoId: json['empleado_id'] as int? ?? 0,
+      empleadoAsignaId: json['empleado_asigna_id'] as int?,
       tipoLimpieza: TipoLimpieza.fromJson(json['tipo_limpieza'] as Map<String, dynamic>? ?? {}),
       habitacionArea: HabitacionArea.fromJson(json['habitacion_area'] as Map<String, dynamic>? ?? {}),
       empleado: json['empleado'] != null && json['empleado'] is Map<String, dynamic>
@@ -196,6 +202,21 @@ class Limpieza {
              '${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return fechaProgramada;
+    }
+  }
+
+  /// Método helper para obtener la fecha de inicio de limpieza formateada
+  String? get fechaInicioLimpiezaFormateada {
+    if (fechaInicioLimpieza == null) return null;
+    try {
+      final dateTime = DateTime.parse(fechaInicioLimpieza!);
+      return '${dateTime.day.toString().padLeft(2, '0')}/'
+             '${dateTime.month.toString().padLeft(2, '0')}/'
+             '${dateTime.year} '
+             '${dateTime.hour.toString().padLeft(2, '0')}:'
+             '${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return fechaInicioLimpieza;
     }
   }
 
