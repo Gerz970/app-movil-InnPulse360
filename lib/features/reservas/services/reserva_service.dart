@@ -104,4 +104,39 @@ class ReservaService {
       rethrow;
     }
   }
+
+  Future<Response> createReserva(Map<String, dynamic> reservaData) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsReservacion.list;
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición POST
+    try {
+      final response = await _dio.post(
+        url,
+        data: reservaData,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
 }
