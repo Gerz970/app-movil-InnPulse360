@@ -8,6 +8,7 @@ import 'models/tipo_limpieza_model.dart';
 import '../../features/hoteles/models/hotel_model.dart';
 import '../../features/pisos/models/piso_model.dart';
 import 'widgets/habitacion_grid_card.dart';
+import 'widgets/limpieza_bottom_nav_bar.dart';
 
 /// Pantalla para crear nuevas limpiezas
 /// Flujo mejorado: Hotel → Piso → Selección Múltiple de Habitaciones → Datos Comunes → Creación Masiva
@@ -209,6 +210,10 @@ class _LimpiezaCrearScreenState extends State<LimpiezaCrearScreen> {
                   ],
                 ),
               ),
+            ),
+            // Barra inferior con opciones de navegación
+            const LimpiezaBottomNavBar(
+              currentScreen: LimpiezaScreenType.crearLimpieza,
             ),
           ],
         ),

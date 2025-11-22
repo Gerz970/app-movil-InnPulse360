@@ -6,6 +6,7 @@ import 'controllers/limpieza_controller.dart';
 import 'models/limpieza_model.dart';
 import 'limpieza_asignar_screen.dart';
 import '../login/login_screen.dart';
+import 'widgets/limpieza_bottom_nav_bar.dart';
 
 /// Pantalla de administración de limpiezas
 /// Muestra las limpiezas filtradas por estatus con un selector
@@ -78,6 +79,10 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
                   return _buildLimpiezasList(controller);
                 },
               ),
+            ),
+            // Barra inferior con opciones de navegación
+            const LimpiezaBottomNavBar(
+              currentScreen: LimpiezaScreenType.asignaciones,
             ),
           ],
         ),
@@ -511,4 +516,5 @@ class _LimpiezaAdministracionScreenState extends State<LimpiezaAdministracionScr
       ],
     );
   }
+
 }

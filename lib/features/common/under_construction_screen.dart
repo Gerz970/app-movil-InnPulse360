@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../features/limpieza/widgets/limpieza_bottom_nav_bar.dart';
 
 /// Pantalla genérica para módulos en construcción
 /// Muestra un mensaje "En construcción" con un ícono informativo
@@ -8,10 +9,14 @@ class UnderConstructionScreen extends StatelessWidget {
   /// Título del módulo que se mostrará en la pantalla
   final String title;
 
+  /// Tipo de pantalla de limpieza si esta pantalla pertenece al módulo de limpieza
+  final LimpiezaScreenType? limpiezaScreenType;
+
   /// Constructor de la pantalla
   const UnderConstructionScreen({
     super.key,
     required this.title,
+    this.limpiezaScreenType,
   });
 
   @override
@@ -51,6 +56,11 @@ class UnderConstructionScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // Barra inferior de limpieza si corresponde
+            if (limpiezaScreenType != null)
+              LimpiezaBottomNavBar(
+                currentScreen: limpiezaScreenType!,
+              ),
           ],
         ),
       ),
