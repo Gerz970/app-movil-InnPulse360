@@ -139,4 +139,39 @@ class ReservaService {
       rethrow;
     }
   }
+
+  Future<Response> cancelarReserva(int reservaId) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsReservacion.detail(reservaId);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición DELETE
+    try {
+      final response = await _dio.delete(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
 }

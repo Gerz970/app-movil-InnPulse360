@@ -41,7 +41,7 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: ElevatedButton(
           onPressed: () {
-              Navigator.push(
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const NuevaReservaScreen()),
             );
@@ -117,7 +117,11 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// ---------------------------
+            /// Cabecera con icono de cama y menú de opciones
+            /// ---------------------------
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 28,
@@ -129,6 +133,8 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
+
+                /// Nombre habitación
                 Expanded(
                   child: Text(
                     r.habitacion.nombreClave,
@@ -139,17 +145,44 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                     ),
                   ),
                 ),
+
+                /// ---------------------------
+                /// Icono de opciones
+                /// ---------------------------
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    if (value == 'cancelar') {
+                      _cancelarReserva(r.idReservacion);
+                    }
+                  },
+                  itemBuilder: (context) {
+                    return [
+                      if (r.idEstatus == 1)
+                        /// SOLO si está activa
+                        const PopupMenuItem(
+                          value: 'cancelar',
+                          child: Text('Cancelar reserva'),
+                        ),
+                    ];
+                  },
+                ),
               ],
             ),
+
             const SizedBox(height: 8),
+
+            /// Descripción
             Text(
               r.habitacion.descripcion,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
+
             const SizedBox(height: 12),
 
+            /// Fechas
             Row(
               children: [
                 const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
@@ -161,8 +194,10 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                 Text("Salida: ${r.fechaSalida.substring(0, 10)}"),
               ],
             ),
+
             const SizedBox(height: 10),
 
+            /// Duración
             Row(
               children: [
                 const Icon(Icons.timer, size: 16, color: Colors.grey),
@@ -171,7 +206,6 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
               ],
             ),
             const SizedBox(height: 10),
-
             _buildStatusBadge(r.idEstatus),
           ],
         ),
@@ -207,5 +241,58 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _cancelarReserva(int idReserva) async {
+    final controller = Provider.of<ReservacionController>(
+      context,
+      listen: false,
+    );
+
+    // Diálogo de confirmación
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar reservación'),
+        content: const Text('¿Seguro que deseas cancelar esta reservación?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Sí, cancelar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    final ok = await controller.cancelarReserva(idReserva);
+
+    if (!context.mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Reservación cancelada correctamente"),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      controller.fetchReservaciones(); // recarga la lista
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error al cancelar: ${controller.errorMessage ?? ''}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

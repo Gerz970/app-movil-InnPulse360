@@ -116,6 +116,25 @@ class ReservacionController with ChangeNotifier {
     }
   }
 
+  Future<bool> cancelarReserva(int idReserva) async {
+  isLoading = true;
+  notifyListeners();
+
+  try {
+    await _service.cancelarReserva(idReserva);
+    isLoading = false;
+    notifyListeners();
+    await fetchReservaciones();
+    return true;
+  } catch (e) {
+    isLoading = false;
+    errorMessage = e.toString();
+    notifyListeners();
+    return false;
+  }
+}
+
+
   void clearHabitaciones() {
     habitaciones = [];
     notifyListeners();
