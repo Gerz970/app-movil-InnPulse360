@@ -8,6 +8,7 @@ import 'package:dio/dio.dart'; // clase dio para construir objeto de http
 import 'package:provider/provider.dart';
 import 'package:flutter/widgets.dart';
 import '../../../features/hoteles/controllers/hotel_controller.dart';
+import '../../notifications/fcm_service.dart'; // servicio de notificaciones push
   // ChangeNotifier: sirve para notificar 
 class AuthController extends ChangeNotifier 
 {
@@ -70,6 +71,17 @@ class AuthController extends ChangeNotifier
       if (response.data != null) {
         await SessionStorage.saveSession(response.data);
         print("Sesión guardada en caché");
+        
+        // 5.1.- Inicializar y registrar token FCM para notificaciones push
+        try {
+          final fcmService = FCMService();
+          await fcmService.initialize();
+          await fcmService.registerToken();
+          print("Token FCM registrado después del login");
+        } catch (e) {
+          print("Error registrando token FCM tras login: $e");
+          // No fallar el login si falla el registro de FCM
+        }
       }
       
       // 6.- CARGAR LOS HOTELES DESPUÉS DEL LOGIN
@@ -200,6 +212,16 @@ class AuthController extends ChangeNotifier
   /// Limpia la sesión guardada y los datos del controlador
   Future<void> logout() async {
     try {
+      // Desregistrar tokens FCM antes de cerrar sesión
+      try {
+        final fcmService = FCMService();
+        await fcmService.unregisterToken();
+        print("Tokens FCM desregistrados antes del logout");
+      } catch (e) {
+        print("Error desregistrando tokens FCM en logout: $e");
+        // Continuar con el logout aunque falle el desregistro de FCM
+      }
+      
       await SessionStorage.clearSession();
       _loginResponse = null;
       _errorMessage = null;
