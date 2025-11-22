@@ -3,14 +3,14 @@ import '../../../api/api_config.dart'; // importar configuracion del api
 import '../../../api/endpoints_reservacion.dart'; // importar endpoints de reservaciones
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 
-class IncidenciaService {
+class ReservaService {
   final Dio _dio;
 
   final String baseUrl = ApiConfig.baseUrl + ApiConfig.apiVersion;
 
   // Constructor de la clase, se inicializa validando si se proporciona una instancia del mismo objeto
   // en caso de que no se proporcione, este creara una nueva
-  IncidenciaService({Dio? dio}) : _dio = dio ?? Dio() {
+  ReservaService({Dio? dio}) : _dio = dio ?? Dio() {
     // configuración para la petición
     _dio.options.connectTimeout = Duration(seconds: ApiConfig.connectTimeoutSeconds);
     _dio.options.receiveTimeout = Duration(seconds: ApiConfig.receiveTimeoutSeconds);
@@ -52,6 +52,39 @@ class IncidenciaService {
 
     // Construir la URL
     final url = baseUrl + EndpointsReservacion.reservasCliente(idCliente);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.get(
+        url,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
+
+  Future<Response> fetchDisponibles(String inicio, String fin) async {
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsReservacion.habitacionesDisponibles(inicio, fin);
 
     // Configurar headers con el token de autenticación
     final headers = {

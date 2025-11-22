@@ -17,4 +17,6 @@ class EndpointsReservacion {
    // Método helper para construir endpoint de habitaciones reservadas por usuario
   static String reservasCliente(int clienteId) => "reservaciones/cliente/$clienteId";
 
+  // Obtener habitaciones disponibles
+  static String habitacionesDisponibles(String inicio, String fin) => "reservaciones/$inicio/$fin";
 }

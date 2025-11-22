@@ -1,3 +1,4 @@
+import 'package:app_movil_innpulse/features/reservas/reservas_create_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './controllers/reservas_controller.dart';
@@ -6,11 +7,11 @@ import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
 
 class ReservacionesListScreen extends StatefulWidget {
-
   const ReservacionesListScreen({super.key});
 
   @override
-  State<ReservacionesListScreen> createState() => _ReservacionesListScreenState();
+  State<ReservacionesListScreen> createState() =>
+      _ReservacionesListScreenState();
 }
 
 class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
@@ -19,7 +20,10 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final controller = Provider.of<ReservacionController>(context, listen: false);
+        final controller = Provider.of<ReservacionController>(
+          context,
+          listen: false,
+        );
         controller.fetchReservaciones();
       }
     });
@@ -30,6 +34,36 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
     return Scaffold(
       drawer: const AppSidebar(),
       backgroundColor: Colors.white,
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ElevatedButton(
+          onPressed: () {
+              Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NuevaReservaScreen()),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF667eea),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            "Nueva reserva",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+
       body: SafeArea(
         child: Column(
           children: [
@@ -39,14 +73,14 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                 builder: (context, controller, child) {
                   if (controller.isLoading) {
                     return const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF667eea)),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF667eea),
+                      ),
                     );
                   }
 
                   if (controller.errorMessage != null) {
-                    return Center(
-                      child: Text(controller.errorMessage!),
-                    );
+                    return Center(child: Text(controller.errorMessage!));
                   }
 
                   if (controller.reservaciones.isEmpty) {
@@ -59,7 +93,9 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                     padding: const EdgeInsets.all(16),
                     itemCount: controller.reservaciones.length,
                     itemBuilder: (context, index) {
-                      return _buildReservacionCard(controller.reservaciones[index]);
+                      return _buildReservacionCard(
+                        controller.reservaciones[index],
+                      );
                     },
                   );
                 },
@@ -75,9 +111,7 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -88,7 +122,11 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: const Color(0xFF667eea).withOpacity(0.2),
-                  child: const Icon(Icons.bed, color: Color(0xFF667eea), size: 28),
+                  child: const Icon(
+                    Icons.bed,
+                    color: Color(0xFF667eea),
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -153,8 +191,11 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isActive ? Icons.check_circle : Icons.cancel,
-              size: 14, color: isActive ? Colors.green : Colors.red),
+          Icon(
+            isActive ? Icons.check_circle : Icons.cancel,
+            size: 14,
+            color: isActive ? Colors.green : Colors.red,
+          ),
           const SizedBox(width: 4),
           Text(
             isActive ? "Activa" : "Inactiva",
