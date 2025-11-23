@@ -208,4 +208,35 @@ class ReservaService {
       rethrow;
     }
   }
+
+  Future<Response> fetchGaleriaHabitacion(int habitacionId) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL usando el mismo endpoint que obtenerImagenHabitacion
+    final url = baseUrl + EndpointsHabitacionArea.obtenerImagen(habitacionId);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return response; // Retornar Response completa con todas las imágenes
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
 }

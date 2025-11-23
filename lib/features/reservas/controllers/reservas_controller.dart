@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../models/reservas_model.dart';
+import '../models/galeria_imagen_model.dart';
 import '../services/reserva_service.dart';
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 import '../models/habitacion_dispobile_model.dart';
@@ -12,7 +13,17 @@ class ReservacionController with ChangeNotifier {
   String? errorMessage;
   bool _isNotAuthenticated = false; // Estado de autenticación
 
+  // Estado de galería
+  List<GaleriaImagen> _galeriaImagenes = [];
+  bool _isLoadingGaleria = false;
+  String? _galeriaErrorMessage;
+
   final ReservaService _service = ReservaService();
+
+  // Getters para galería
+  List<GaleriaImagen> get galeriaImagenes => _galeriaImagenes;
+  bool get isLoadingGaleria => _isLoadingGaleria;
+  String? get galeriaErrorMessage => _galeriaErrorMessage;
 
   Future<void> fetchReservaciones() async {
     try {
@@ -170,6 +181,31 @@ class ReservacionController with ChangeNotifier {
 
   void clearHabitaciones() {
     habitaciones = [];
+    notifyListeners();
+  }
+
+  Future<void> fetchGaleria(int habitacionAreaId) async {
+    _isLoadingGaleria = true;
+    _galeriaErrorMessage = null;
+    _galeriaImagenes = [];
+    notifyListeners();
+
+    try {
+      final response = await _service.fetchGaleriaHabitacion(habitacionAreaId);
+
+      if (response.data is Map && response.data['imagenes'] is List) {
+        _galeriaImagenes = (response.data['imagenes'] as List)
+            .map((img) => GaleriaImagen.fromJson(img as Map<String, dynamic>))
+            .toList();
+      } else {
+        _galeriaImagenes = [];
+      }
+    } catch (e) {
+      _galeriaErrorMessage = 'Error al cargar galería: ${e.toString()}';
+      _galeriaImagenes = [];
+    }
+
+    _isLoadingGaleria = false;
     notifyListeners();
   }
 }

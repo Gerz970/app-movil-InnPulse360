@@ -157,10 +157,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PerfilController()),
         ChangeNotifierProvider(create: (_) => LimpiezaController()),
         ChangeNotifierProvider(create: (_) => ReservacionController()),
+
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
-        title: 'InnPulseMovile',
+        title: 'InnPulse App',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF667eea)),
           useMaterial3: true,
