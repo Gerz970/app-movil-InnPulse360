@@ -64,11 +64,11 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(20)
           ),
           child: SizedBox(
-            width: 200,
-            height: 100,
+            width: 280,
+            height: 140,
             child:
               Image(
-                image: AssetImage('lib/assets/img/logo.jpg')
+                image: AssetImage('lib/assets/splash_logo.png')
               )
           )
         ),

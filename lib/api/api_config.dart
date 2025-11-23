@@ -5,8 +5,8 @@ variables de confgiguracion
 
 class ApiConfig {
   //Url base del api
-  //static const String baseUrl = "https://app-interface-innpulse360-production.up.railway.app/";
-  static const String baseUrl = "http://localhost:8000/";
+  static const String baseUrl = "https://app-interface-innpulse360-production.up.railway.app/";
+  //static const String baseUrl = "http://localhost:8000/";
   // Timeout para las peticiones
   static const int connectTimeoutSeconds = 30; //Propósito: tiempo máximo para establecer conexión (en segundos)
   static const int receiveTimeoutSeconds = 30; //Propósito: tiempo máximo para recibir respuesta (en segundos)
