@@ -25,7 +25,7 @@ class _NuevaReservaScreenState extends State<NuevaReservaScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Nueva Reserva"),
-        backgroundColor: const Color(0xFF667eea),
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -149,9 +149,17 @@ class _NuevaReservaScreenState extends State<NuevaReservaScreen> {
                 children: [
                   // IMAGEN DE FONDO (placeholder)
                   Positioned.fill(
-                    child: Image.network(
-                      "https://2.bp.blogspot.com/-9e1ZZEaTv8w/XJTrxHzY9YI/AAAAAAAADSk/3tOUwztxkmoP9iVMYeGlGhf9wXxezHrYACLcBGAs/s1600/habitaciones-minimalista-2019-26.jpg",
-                      fit: BoxFit.cover,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withOpacity(0.35), // oscurece la imagen
+                        BlendMode.darken, // mezcla para oscurecer
+                      ),
+                      child: Image.network(
+                        (h.imagenUrl?.isNotEmpty ?? false)
+                            ? h.imagenUrl!
+                            : "https://2.bp.blogspot.com/-9e1ZZEaTv8w/XJTrxHzY9YI/AAAAAAAADSk/3tOUwztxkmoP9iVMYeGlGhf9wXxezHrYACLcBGAs/s1600/habitaciones-minimalista-2019-26.jpg",
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
 
@@ -229,49 +237,6 @@ class _NuevaReservaScreenState extends State<NuevaReservaScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHabitacionCard(HabitacionDisponible h) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              h.nombreClave,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            Text(h.descripcion, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 12),
-
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () {
-                  _confirmarReserva(context, h.idHabitacionArea);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF667eea),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
-                child: const Text(
-                  "Reservar",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

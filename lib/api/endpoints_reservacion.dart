@@ -18,5 +18,5 @@ class EndpointsReservacion {
   static String reservasCliente(int clienteId) => "reservaciones/cliente/$clienteId";
 
   // Obtener habitaciones disponibles
-  static String habitacionesDisponibles(String inicio, String fin) => "reservaciones/$inicio/$fin";
+  static String habitacionesDisponibles(String inicio, String fin, int limit) => "reservaciones/$inicio/$fin?limit=$limit";
 }

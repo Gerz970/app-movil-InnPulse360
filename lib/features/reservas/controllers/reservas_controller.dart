@@ -29,6 +29,19 @@ class ReservacionController with ChangeNotifier {
 
       reservaciones = data.map((e) => Reservacion.fromJson(e)).toList();
 
+      Future.wait(
+        reservaciones.map((h) async {
+          try {
+            h.imagenUrl = await _service.obtenerImagenHabitacion(
+              h.habitacionAreaId,
+            );
+          } catch (_) {
+            h.imagenUrl = "";
+          }
+        }),
+      ).then((_) {
+        notifyListeners(); // actualizar después de cargar imágenes
+      });
     } catch (e) {
       errorMessage = "Error al cargar reservaciones: $e";
     }
@@ -46,8 +59,22 @@ class ReservacionController with ChangeNotifier {
       final data = response.data as List;
 
       habitaciones = data.map((e) => HabitacionDisponible.fromJson(e)).toList();
+
+      Future.wait(
+        habitaciones.map((h) async {
+          try {
+            h.imagenUrl = await _service.obtenerImagenHabitacion(
+              h.idHabitacionArea,
+            );
+          } catch (_) {
+            h.imagenUrl = "";
+          }
+        }),
+      ).then((_) {
+        notifyListeners(); // actualizar después de cargar imágenes
+      });
     } catch (e) {
-      habitaciones = [];
+      print("Error en fetchDisponibles: $e");
     }
 
     isLoading = false;
@@ -83,22 +110,29 @@ class ReservacionController with ChangeNotifier {
           final statusCode = e.response?.statusCode;
 
           // Error 401 - No autenticado
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al crear incidencia: ${e.response?.data}');
+            errorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print(
+              'Error de autenticación al crear incidencia: ${e.response?.data}',
+            );
           }
           // Error 422 - Validación
           else if (statusCode == 422) {
             errorMessage = 'Error de validación: ${e.response?.data}';
-            print('Error de validación al crear incidencia: ${e.response?.data}');
+            print(
+              'Error de validación al crear incidencia: ${e.response?.data}',
+            );
           }
           // Otro error del servidor
           else {
             errorMessage = 'Error ${statusCode}: ${e.response?.data}';
-            print('Error del servidor al crear incidencia: ${e.response?.data}');
+            print(
+              'Error del servidor al crear incidencia: ${e.response?.data}',
+            );
           }
         } else {
           // Error de conexión
@@ -117,23 +151,22 @@ class ReservacionController with ChangeNotifier {
   }
 
   Future<bool> cancelarReserva(int idReserva) async {
-  isLoading = true;
-  notifyListeners();
+    isLoading = true;
+    notifyListeners();
 
-  try {
-    await _service.cancelarReserva(idReserva);
-    isLoading = false;
-    notifyListeners();
-    await fetchReservaciones();
-    return true;
-  } catch (e) {
-    isLoading = false;
-    errorMessage = e.toString();
-    notifyListeners();
-    return false;
+    try {
+      await _service.cancelarReserva(idReserva);
+      isLoading = false;
+      notifyListeners();
+      await fetchReservaciones();
+      return true;
+    } catch (e) {
+      isLoading = false;
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
-}
-
 
   void clearHabitaciones() {
     habitaciones = [];

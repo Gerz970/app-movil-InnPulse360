@@ -6,6 +6,7 @@ class Reservacion {
   final String fechaSalida;
   final int duracion;
   final int idEstatus;
+  String imagenUrl;
 
   final Habitacion habitacion;
   final Cliente cliente;
@@ -20,6 +21,7 @@ class Reservacion {
     required this.idEstatus,
     required this.habitacion,
     required this.cliente,
+    required this.imagenUrl
   });
 
   factory Reservacion.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class Reservacion {
       idEstatus: json['id_estatus'],
       habitacion: Habitacion.fromJson(json['habitacion']),
       cliente: Cliente.fromJson(json['cliente']),
+      imagenUrl: json['imagen_url'] ?? "", 
     );
   }
 }

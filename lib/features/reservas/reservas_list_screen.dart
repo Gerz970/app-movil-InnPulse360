@@ -112,101 +112,142 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// ---------------------------
-            /// Cabecera con icono de cama y menú de opciones
+            /// ENCABEZADO VISUAL CON IMAGEN
             /// ---------------------------
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Stack(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: const Color(0xFF667eea).withOpacity(0.2),
-                  child: const Icon(
-                    Icons.bed,
-                    color: Color(0xFF667eea),
-                    size: 28,
+                // IMAGEN DE HABITACIÓN (si tienes url)
+                SizedBox(
+                  height: 140,
+                  width: double.infinity,
+                  child: Image.network(
+                    r.imagenUrl ??
+                        "https://2.bp.blogspot.com/-9e1ZZEaTv8w/XJTrxHzY9YI/AAAAAAAADSk/3tOUwztxkmoP9iVMYeGlGhf9wXxezHrYACLcBGAs/s1600/habitaciones-minimalista-2019-26.jpg",
+                    fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 16),
 
-                /// Nombre habitación
-                Expanded(
-                  child: Text(
-                    r.habitacion.nombreClave,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1a1a1a),
+                // DEGRADADO OSCURO PARA TEXTO LEGIBLE
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.6),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
                     ),
                   ),
                 ),
 
-                /// ---------------------------
-                /// Icono de opciones
-                /// ---------------------------
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (value) {
-                    if (value == 'cancelar') {
-                      _cancelarReserva(r.idReservacion);
-                    }
-                  },
-                  itemBuilder: (context) {
-                    return [
-                      if (r.idEstatus == 1)
-                        /// SOLO si está activa
-                        const PopupMenuItem(
-                          value: 'cancelar',
-                          child: Text('Cancelar reserva'),
+                // CONTENIDO ENCIMA DE LA IMAGEN
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 12,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white.withOpacity(0.8),
+                        child: const Icon(
+                          Icons.bed,
+                          color: Color(0xFF667eea),
+                          size: 26,
                         ),
-                    ];
-                  },
+                      ),
+                      const SizedBox(width: 14),
+
+                      /// Nombre habitación
+                      Expanded(
+                        child: Text(
+                          r.habitacion.nombreClave,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+
+                      /// Menú opciones
+                      PopupMenuButton<String>(
+                        color: Colors.white,
+                        icon: const Icon(Icons.more_vert, color: Colors.white),
+                        onSelected: (value) {
+                          if (value == 'cancelar') {
+                            _cancelarReserva(r.idReservacion);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (r.idEstatus == 1)
+                            const PopupMenuItem(
+                              value: 'cancelar',
+                              child: Text("Cancelar reserva"),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 8),
+            /// ---------------------------
+            /// CONTENIDO INFERIOR DEL CARD
+            /// ---------------------------
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    r.habitacion.descripcion,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
 
-            /// Descripción
-            Text(
-              r.habitacion.descripcion,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 6),
+                      Text("Entrada: ${r.fechaReserva.substring(0, 10)}"),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.logout, size: 16, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Text("Salida: ${r.fechaSalida.substring(0, 10)}"),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      const Icon(Icons.timer, size: 16, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Text("Duración: ${r.duracion} días"),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildStatusBadge(r.idEstatus),
+                ],
+              ),
             ),
-
-            const SizedBox(height: 12),
-
-            /// Fechas
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text("Entrada: ${r.fechaReserva.substring(0, 10)}"),
-                const SizedBox(width: 16),
-                const Icon(Icons.logout, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text("Salida: ${r.fechaSalida.substring(0, 10)}"),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            /// Duración
-            Row(
-              children: [
-                const Icon(Icons.timer, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text("Duración: ${r.duracion} días"),
-              ],
-            ),
-            const SizedBox(height: 10),
-            _buildStatusBadge(r.idEstatus),
           ],
         ),
       ),
