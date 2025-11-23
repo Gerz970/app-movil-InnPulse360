@@ -135,7 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             width: 200,
             height: 100,
             child: Image(
-              image: AssetImage('lib/assets/img/logo.jpg'),
+              image: AssetImage('lib/assets/splash_logo.png'),
             ),
           ),
         ),
