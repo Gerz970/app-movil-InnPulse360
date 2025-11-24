@@ -3,6 +3,7 @@ import '../../../api/api_config.dart'; // importar configuracion del api
 import '../../../api/endpoints_reservacion.dart'; // importar endpoints de reservaciones
 import '../../../core/auth/services/session_storage.dart'; // para obtener token de sesión
 import '../../../api/endpoints_habitacion_area.dart'; // importar endpoints de reservaciones
+import '../../../api/endpoints_tipo_habitacion.dart'; // importar endpoints de tipos de habitación
 
 class ReservaService {
   final Dio _dio;
@@ -236,6 +237,101 @@ class ReservaService {
       return response; // Retornar Response completa con todas las imágenes
     } catch (e) {
       // Manejo de errores
+      rethrow;
+    }
+  }
+
+  /// Obtener detalle de un tipo de habitación por su ID
+  Future<Response> fetchTipoHabitacionDetail(int tipoHabitacionId) async {
+    final token = await _getToken();
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsTipoHabitacion.detail(tipoHabitacionId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener galería de imágenes de un tipo de habitación
+  Future<Response> fetchGaleriaTipoHabitacion(int tipoHabitacionId) async {
+    final token = await _getToken();
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsTipoHabitacion.galeria(tipoHabitacionId);
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener lista de todos los tipos de habitación
+  Future<Response> fetchTiposHabitacion({int skip = 0, int limit = 100}) async {
+    final token = await _getToken();
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsTipoHabitacion.list + '?skip=$skip&limit=$limit';
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Obtener tipos de habitación disponibles agrupados por tipo
+  Future<Response> fetchTiposHabitacionDisponibles(String inicio, String fin, {int? idHotel}) async {
+    final token = await _getToken();
+
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsReservacion.tiposDisponibles(inicio, fin, idHotel: idHotel);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return response;
+    } catch (e) {
       rethrow;
     }
   }

@@ -19,4 +19,12 @@ class EndpointsReservacion {
 
   // Obtener habitaciones disponibles
   static String habitacionesDisponibles(String inicio, String fin, int limit) => "reservaciones/$inicio/$fin?limit=$limit";
+
+  // Obtener tipos de habitación disponibles
+  static String tiposDisponibles(String inicio, String fin, {int? idHotel}) {
+    if (idHotel != null) {
+      return "reservaciones/tipos-disponibles/$inicio/$fin?id_hotel=$idHotel";
+    }
+    return "reservaciones/tipos-disponibles/$inicio/$fin";
+  }
 }
