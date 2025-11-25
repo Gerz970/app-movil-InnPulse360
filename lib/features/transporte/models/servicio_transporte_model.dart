@@ -4,7 +4,7 @@ class ServicioTransporteModel {
   final DateTime fechaServicio;
   final String horaServicio;
   final int? idEstatus;
-  final int empleadoId;
+  final int? empleadoId;
   final String? observacionesCliente;
   final String? observacionesEmpleado;
   final int? calificacionViaje;
@@ -25,7 +25,7 @@ class ServicioTransporteModel {
     required this.fechaServicio,
     required this.horaServicio,
     this.idEstatus,
-    required this.empleadoId,
+    this.empleadoId,
     this.observacionesCliente,
     this.observacionesEmpleado,
     this.calificacionViaje,
@@ -45,7 +45,7 @@ class ServicioTransporteModel {
     'fecha_servicio': fechaServicio.toIso8601String().split('T')[0],
     'hora_servicio': horaServicio,
     if (idEstatus != null) 'id_estatus': idEstatus,
-    'empleado_id': empleadoId,
+    if (empleadoId != null) 'empleado_id': empleadoId,
     if (observacionesCliente != null) 'observaciones_cliente': observacionesCliente,
     if (observacionesEmpleado != null) 'observaciones_empleado': observacionesEmpleado,
     if (calificacionViaje != null) 'calificacion_viaje': calificacionViaje,
