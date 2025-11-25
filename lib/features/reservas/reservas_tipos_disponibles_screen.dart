@@ -236,7 +236,7 @@ class _ReservasTiposDisponiblesScreenState
                     crossAxisCount: 3,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 0.65,
+                    childAspectRatio: 0.7, // Aumentado de 0.65 a 0.7 para dar más espacio vertical
                   ),
                   itemCount: controller.tiposDisponibles.length,
                   itemBuilder: (context, index) {
@@ -452,27 +452,31 @@ class _ReservasTiposDisponiblesScreenState
             // Información
             Expanded(
               flex: 2,
-                    child: Padding(
+              child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Nombre del tipo
-                    Text(
-                      tipo.tipoHabitacion.tipoHabitacion,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1a1a1a),
-                        letterSpacing: -0.2,
+                    Flexible(
+                      child: Text(
+                        tipo.tipoHabitacion.tipoHabitacion,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1a1a1a),
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     
                     // Cantidad disponible
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.check_circle,
@@ -480,7 +484,7 @@ class _ReservasTiposDisponiblesScreenState
                           color: Colors.green[600],
                         ),
                         const SizedBox(width: 3),
-                        Expanded(
+                        Flexible(
                           child: Text(
                             "${tipo.cantidadDisponible} ${tipo.cantidadDisponible == 1 ? 'disponible' : 'disponibles'}",
                             style: TextStyle(
@@ -494,37 +498,48 @@ class _ReservasTiposDisponiblesScreenState
                         ),
                       ],
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 8),
                     
                     // Precio destacado
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF667eea).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Costo por $duracionDias ${duracionDias == 1 ? 'día' : 'días'}",
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF667eea).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Costo por $duracionDias ${duracionDias == 1 ? 'día' : 'días'}",
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            precioFormateado,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF667eea),
-                              letterSpacing: -0.5,
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                precioFormateado,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF667eea),
+                                  letterSpacing: -0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],

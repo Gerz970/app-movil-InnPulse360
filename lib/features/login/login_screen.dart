@@ -4,6 +4,8 @@ import '../../../core/auth/controllers/auth_controller.dart'; //controller de es
 import '../home/home_screen.dart'; // pantalla de inicio
 import 'register_screen.dart'; // pantalla de registro
 import 'forgot_password_screen.dart'; // pantalla de recuperar contraseña
+import '../../../core/utils/modules.dart'; // mapeo de rutas a pantallas
+import '../common/under_construction_screen.dart'; // pantalla para módulos no implementados
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -382,13 +384,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authController.login(login, password, context);
     
     if (success) {
-      // Login exitoso - navegar a HomeScreen
+      // Login exitoso - navegar al primer módulo asignado
       if (context.mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
-          ),
-        );
+        _navigateToFirstModule(context, authController.loginResponse);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Bienvenido $login'),
@@ -400,6 +398,90 @@ class _LoginScreenState extends State<LoginScreen> {
       // El error ya está manejado en el AuthController y se mostrará en _buildErrorMessage
       // No necesitamos hacer nada más aquí
     }
+  }
+
+  /// Navega al primer módulo asignado al usuario
+  void _navigateToFirstModule(BuildContext context, Map<String, dynamic>? loginResponse) {
+    // Obtener módulos del loginResponse
+    List<dynamic> modulos = [];
+    if (loginResponse != null && loginResponse['modulos'] is List) {
+      modulos = loginResponse['modulos'] as List;
+    }
+
+    print('🔍 [Login] Total módulos recibidos: ${modulos.length}');
+
+    // Filtrar solo los módulos que son móvil (movil == 1)
+    // Reutilizando la misma lógica que app_sidebar.dart
+    final modulosMovil = modulos.where((modulo) {
+      final moduloMap = modulo as Map<String, dynamic>;
+      final movil = moduloMap['movil'];
+      final nombre = moduloMap['nombre'] as String? ?? 'Sin nombre';
+      final ruta = moduloMap['ruta'] as String? ?? 'Sin ruta';
+      
+      // Verificar si movil es 1 (puede ser int, num, String '1', o bool true)
+      if (movil == null) {
+        print('❌ [Login] Módulo "$nombre" (ruta: "$ruta") - movil es null, descartado');
+        return false; // Si es null, no es móvil
+      }
+      
+      bool esMovil = false;
+      // Manejar diferentes tipos de datos
+      if (movil is int || movil is num) {
+        esMovil = movil == 1;
+      } else if (movil is String) {
+        esMovil = movil == '1' || movil.toLowerCase() == 'true';
+      } else if (movil is bool) {
+        esMovil = movil == true;
+      }
+      
+      if (esMovil) {
+        print('✅ [Login] Módulo móvil encontrado: "$nombre" (ruta: "$ruta", movil: $movil)');
+      } else {
+        print('❌ [Login] Módulo "$nombre" (ruta: "$ruta") - movil=$movil (tipo: ${movil.runtimeType}), descartado');
+      }
+      
+      return esMovil;
+    }).toList();
+
+    print('📱 [Login] Total módulos móviles filtrados: ${modulosMovil.length}');
+
+    // Si no hay módulos móviles, navegar a HomeScreen por defecto
+    if (modulosMovil.isEmpty) {
+      print('⚠️ [Login] No hay módulos móviles disponibles, navegando a HomeScreen');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        ),
+      );
+      return;
+    }
+
+    // Obtener el primer módulo
+    final primerModulo = modulosMovil.first as Map<String, dynamic>;
+    final rutaModulo = (primerModulo['ruta'] as String? ?? '').trim();
+    final nombreModulo = primerModulo['nombre'] as String? ?? 'Módulo';
+
+    print('🎯 [Login] Navegando al primer módulo móvil: "$nombreModulo" (ruta: "$rutaModulo")');
+    print('📋 [Login] Rutas disponibles en moduleScreens: ${moduleScreens.keys.toList()}');
+
+    // Buscar la pantalla correspondiente en moduleScreens
+    final entry = moduleScreens.entries.firstWhere(
+      (e) => rutaModulo == e.key,
+      orElse: () {
+        print('⚠️ [Login] Ruta "$rutaModulo" no encontrada en moduleScreens, usando UnderConstructionScreen');
+        return MapEntry(
+          'default',
+          () => UnderConstructionScreen(title: nombreModulo),
+        );
+      },
+    );
+
+    print('✅ [Login] Pantalla encontrada para ruta "$rutaModulo", navegando...');
+
+    // Navegar a la pantalla del primer módulo
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => entry.value()),
+    );
   }
 
   void _navigateToRegister() {

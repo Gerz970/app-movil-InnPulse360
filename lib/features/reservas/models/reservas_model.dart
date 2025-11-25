@@ -6,6 +6,7 @@ class Reservacion {
   final String fechaSalida;
   final int duracion;
   final int idEstatus;
+  final String? codigoReservacion;
   String imagenUrl;
 
   final Habitacion habitacion;
@@ -19,6 +20,7 @@ class Reservacion {
     required this.fechaSalida,
     required this.duracion,
     required this.idEstatus,
+    this.codigoReservacion,
     required this.habitacion,
     required this.cliente,
     required this.imagenUrl
@@ -33,6 +35,7 @@ class Reservacion {
       fechaSalida: json['fecha_salida'],
       duracion: json['duracion'],
       idEstatus: json['id_estatus'],
+      codigoReservacion: json['codigo_reservacion'] as String?,
       habitacion: Habitacion.fromJson(json['habitacion']),
       cliente: Cliente.fromJson(json['cliente']),
       imagenUrl: json['imagen_url'] ?? "", 

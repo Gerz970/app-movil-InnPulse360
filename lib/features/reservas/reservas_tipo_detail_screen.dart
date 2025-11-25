@@ -5,8 +5,6 @@ import './reservas_confirmacion_screen.dart';
 import './widgets/reservas_bottom_nav_bar.dart';
 import './models/tipo_habitacion_model.dart';
 import '../../../core/auth/services/session_storage.dart';
-import '../clientes/models/cliente_model.dart';
-import '../clientes/services/cliente_service.dart';
 
 class ReservasTipoDetailScreen extends StatefulWidget {
   final int tipoHabitacionId;
@@ -27,9 +25,7 @@ class ReservasTipoDetailScreen extends StatefulWidget {
 
 class _ReservasTipoDetailScreenState extends State<ReservasTipoDetailScreen> {
   final PageController _pageController = PageController();
-  Cliente? _clienteData;
-  bool _isLoadingCliente = false;
-  String? _clienteErrorMessage;
+  Map<String, dynamic>? _usuarioData;
 
   @override
   void initState() {
@@ -37,47 +33,20 @@ class _ReservasTipoDetailScreenState extends State<ReservasTipoDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = Provider.of<ReservacionController>(context, listen: false);
       controller.fetchTipoHabitacionDetail(widget.tipoHabitacionId);
-      _loadClienteData();
+      _loadUsuarioData();
     });
   }
 
-  Future<void> _loadClienteData() async {
+  Future<void> _loadUsuarioData() async {
     try {
-      setState(() {
-        _isLoadingCliente = true;
-        _clienteErrorMessage = null;
-      });
-
       final session = await SessionStorage.getSession();
-      if (session == null || session['usuario'] == null) {
-        throw Exception('No hay sesión activa');
+      if (session != null && session['usuario'] != null) {
+        setState(() {
+          _usuarioData = session['usuario'] as Map<String, dynamic>;
+        });
       }
-
-      final usuario = session['usuario'] as Map<String, dynamic>;
-      final clienteId = usuario['cliente_id'] as int?;
-      
-      if (clienteId == null) {
-        throw Exception('No se encontró el ID del cliente en la sesión');
-      }
-
-      final clienteService = ClienteService();
-      final response = await clienteService.fetchClienteDetail(clienteId);
-      
-      if (response.data == null) {
-        throw Exception('No se recibieron datos del cliente');
-      }
-
-      final clienteJson = response.data as Map<String, dynamic>;
-      setState(() {
-        _clienteData = Cliente.fromJson(clienteJson);
-        _isLoadingCliente = false;
-      });
     } catch (e) {
-      print("🔴 Error al cargar datos del cliente: $e");
-      setState(() {
-        _clienteErrorMessage = e.toString();
-        _isLoadingCliente = false;
-      });
+      print("🔴 Error al cargar datos del usuario desde SessionStorage: $e");
     }
   }
 
@@ -629,96 +598,21 @@ class _ReservasTipoDetailScreenState extends State<ReservasTipoDetailScreen> {
     final purple700 = Colors.purple.shade700;
     final purple600 = Colors.purple.shade600;
 
-    if (_isLoadingCliente) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              purple50,
-              purple25,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: purple200,
-            width: 1,
-          ),
-        ),
-        child: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: CircularProgressIndicator(
-              color: Color(0xFF667eea),
-            ),
-          ),
-        ),
-      );
+    if (_usuarioData == null) {
+      return const SizedBox.shrink();
     }
 
-    if (_clienteErrorMessage != null || _clienteData == null) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              purple50,
-              purple25,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: purple200,
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: purple100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.person,
-                    color: purple700,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  "Cliente",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1a1a1a),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _clienteErrorMessage ?? 'No se pudieron cargar los datos del cliente',
-              style: const TextStyle(color: Colors.red),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final cliente = _clienteData!;
-    final nombreCompleto = cliente.nombreCompleto;
-    final rfc = cliente.rfc.isNotEmpty ? cliente.rfc : null;
-    final documentoIdentificacion = cliente.documentoIdentificacion;
-    final email = cliente.correoElectronico;
+    // Extraer datos del usuario desde SessionStorage
+    final nombre = _usuarioData!['nombre_razon_social'] as String? ?? '';
+    final apellidoPaterno = _usuarioData!['apellido_paterno'] as String? ?? '';
+    final apellidoMaterno = _usuarioData!['apellido_materno'] as String? ?? '';
+    final email = _usuarioData!['correo'] as String?;
+    final clienteId = _usuarioData!['cliente_id'] as int?;
+    
+    // Construir nombre completo
+    final nombreCompleto = [nombre, apellidoPaterno, apellidoMaterno]
+        .where((s) => s.isNotEmpty)
+        .join(' ');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -771,22 +665,14 @@ class _ReservasTipoDetailScreenState extends State<ReservasTipoDetailScreen> {
             iconColor: purple600,
             label: "Nombre completo",
             value: nombreCompleto.isNotEmpty ? nombreCompleto : 'No disponible',
-            isLast: rfc == null && documentoIdentificacion == null && email == null,
+            isLast: email == null && clienteId == null,
           ),
-          if (rfc != null)
+          if (clienteId != null)
             _buildDetailRow(
-              icon: Icons.description,
+              icon: Icons.tag,
               iconColor: purple600,
-              label: "RFC",
-              value: rfc,
-              isLast: documentoIdentificacion == null && email == null,
-            ),
-          if (documentoIdentificacion != null && documentoIdentificacion.isNotEmpty)
-            _buildDetailRow(
-              icon: Icons.credit_card,
-              iconColor: purple600,
-              label: "Identificación",
-              value: documentoIdentificacion,
+              label: "ID de cliente",
+              value: clienteId.toString(),
               isLast: email == null,
             ),
           if (email != null)

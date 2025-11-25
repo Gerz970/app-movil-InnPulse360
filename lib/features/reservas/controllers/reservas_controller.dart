@@ -30,6 +30,9 @@ class ReservacionController with ChangeNotifier {
   bool _isLoadingTipoDetail = false;
   String? _tiposDisponiblesErrorMessage;
   String? _tipoDetailErrorMessage;
+  
+  // Código de reservación creada
+  String? _codigoReservacionCreada;
 
   final ReservaService _service = ReservaService();
 
@@ -47,6 +50,7 @@ class ReservacionController with ChangeNotifier {
   bool get isLoadingTipoDetail => _isLoadingTipoDetail;
   String? get tiposDisponiblesErrorMessage => _tiposDisponiblesErrorMessage;
   String? get tipoDetailErrorMessage => _tipoDetailErrorMessage;
+  String? get codigoReservacionCreada => _codigoReservacionCreada;
 
   Future<void> fetchReservaciones() async {
     try {
@@ -149,15 +153,18 @@ class ReservacionController with ChangeNotifier {
     try {
       final response = await _service.createReserva(reservaData);
       isLoading = false;
-      notifyListeners();
-
-      // Verificar si el backend devolvió el código de reservación
+      
+      // Guardar código de reservación recibido del backend
+      _codigoReservacionCreada = null;
       if (response.data != null && response.data is Map<String, dynamic>) {
         final responseData = response.data as Map<String, dynamic>;
         if (responseData['codigo_reservacion'] != null) {
-          print("🔵 [ReservacionController] Código de reservación recibido del backend: ${responseData['codigo_reservacion']}");
+          _codigoReservacionCreada = responseData['codigo_reservacion'] as String;
+          print("🔵 [ReservacionController] Código de reservación recibido del backend: $_codigoReservacionCreada");
         }
       }
+      
+      notifyListeners();
 
       await fetchReservaciones();
 

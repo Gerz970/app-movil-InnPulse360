@@ -257,23 +257,15 @@ class _ReservasConfirmacionScreenState
       print("  - fechaInicioReserva: $fechaInicioReserva");
       print("  - fechaFinReserva: $fechaFinReserva");
 
-      // Generar código de reservación antes de crear la reserva
-      print("🔵 [ReservasConfirmacion] Generando código de reservación...");
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final codigo = timestamp.length > 7 
-          ? timestamp.substring(timestamp.length - 7)
-          : timestamp;
-      final codigoReservacion = "RES-$codigo";
-      print("  - codigoReservacion: $codigoReservacion");
-
       print("🔵 [ReservasConfirmacion] Creando objeto reservaData...");
+      // El código de reservación será generado automáticamente por el backend
       final reservaData = <String, dynamic>{
         'habitacion_area_id': habitacion.idHabitacionArea,
         'fecha_reserva': fechaInicioReserva,
         'fecha_salida': fechaFinReserva,
         'duracion': duracion,
         'id_estatus': 1,
-        'codigo_reservacion': codigoReservacion,
+        // No incluir codigo_reservacion - el backend lo generará automáticamente
       };
       print("  - reservaData: $reservaData");
 
@@ -286,13 +278,14 @@ class _ReservasConfirmacionScreenState
       if (!mounted) return;
       
       if (ok) {
-        // Usar el código generado (el backend debería devolverlo también en la respuesta)
+        // Obtener el código de reservación del backend
+        final codigoDelBackend = controller.codigoReservacionCreada;
         if (!mounted) return;
         setState(() {
           _isCreating = false;
-          _codigoReservacion = codigoReservacion;
+          _codigoReservacion = codigoDelBackend ?? "N/A";
         });
-        print("✅ [ReservasConfirmacion] Código de reservación guardado: $codigoReservacion");
+        print("✅ [ReservasConfirmacion] Código de reservación recibido del backend: $codigoDelBackend");
       } else {
         if (!mounted) return;
         setState(() {
@@ -376,18 +369,34 @@ class _ReservasConfirmacionScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_isCreating)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Column(
-                    children: [
-                      CircularProgressIndicator(
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Generando reservación...",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF667eea),
                       ),
-                      SizedBox(height: 16),
-                      Text("Creando reservación..."),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+                    const LinearProgressIndicator(
+                      backgroundColor: Color(0xFFE5E7EB),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Por favor espera...",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
               )
             else if (_errorMessage != null)
@@ -421,31 +430,56 @@ class _ReservasConfirmacionScreenState
               )
             else if (_codigoReservacion != null)
               Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Mensaje de éxito
                   Card(
-                    color: Colors.green[50],
-                    child: Padding(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.green.shade50,
+                            Colors.green.shade100,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 64,
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 64,
+                            ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           const Text(
                             "¡Reservación creada con éxito!",
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              color: Color(0xFF1a1a1a),
                             ),
+                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
                           // Código de reservación
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
@@ -453,6 +487,13 @@ class _ReservasConfirmacionScreenState
                                 color: const Color(0xFF667eea),
                                 width: 2,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Column(
                               children: [
@@ -461,16 +502,17 @@ class _ReservasConfirmacionScreenState
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 12),
                                 Text(
                                   _codigoReservacion!,
                                   style: const TextStyle(
-                                    fontSize: 24,
+                                    fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF667eea),
-                                    letterSpacing: 2,
+                                    letterSpacing: 3,
                                   ),
                                 ),
                               ],
@@ -481,64 +523,200 @@ class _ReservasConfirmacionScreenState
                     ),
                   ),
                   const SizedBox(height: 24),
+                  // Mensaje sobre correo enviado
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.blue.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.email,
+                          color: Colors.blue.shade700,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Correo enviado",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade900,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Se ha enviado un correo con la cotización de tu reservación a tu dirección de email registrada.",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.blue.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   // Resumen de reservación
                   Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Resumen de Reservación",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.receipt_long,
+                                color: Colors.purple.shade600,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Resumen de Reservación",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1a1a1a),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildResumenRow(
+                            Icons.calendar_today,
+                            "Fechas",
+                            "Del ${widget.fechaInicio.toString().substring(0, 10)} al ${widget.fechaFin.toString().substring(0, 10)}",
                           ),
                           const SizedBox(height: 16),
-                          _buildResumenRow("Fechas", "Del ${widget.fechaInicio.toString().substring(0, 10)} al ${widget.fechaFin.toString().substring(0, 10)}"),
-                          const Divider(),
-                          _buildResumenRow("Duración", "$duracionDias ${duracionDias == 1 ? 'día' : 'días'}"),
-                          const Divider(),
-                          _buildResumenRow("Precio Total", "\$${(widget.precioTotal ?? 0.0).toStringAsFixed(2)}"),
+                          _buildResumenRow(
+                            Icons.access_time,
+                            "Duración",
+                            "$duracionDias ${duracionDias == 1 ? 'día' : 'días'}",
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.attach_money,
+                                      color: Colors.purple.shade700,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Precio Total",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.purple.shade900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  "\$${(widget.precioTotal ?? 0.0).toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Botones de acción
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ReservacionesListScreen(),
+                  // Botón principal: Ver Mis Reservaciones
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ReservacionesListScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF667eea),
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        (route) => false,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF667eea),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    child: const Text(
-                      "Ver Mis Reservaciones",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      icon: const Icon(
+                        Icons.list_alt,
+                        size: 24,
+                      ),
+                      label: const Text(
+                        "Ver Mis Reservaciones",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.popUntil(context, (route) => route.isFirst);
-                    },
-                    child: const Text("Volver al Inicio"),
+                  const SizedBox(height: 16),
+                  // Botón secundario: Volver al Inicio
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF667eea),
+                        side: const BorderSide(
+                          color: Color(0xFF667eea),
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.home),
+                      label: const Text(
+                        "Volver al Inicio",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -588,28 +766,37 @@ class _ReservasConfirmacionScreenState
     }
   }
 
-  Widget _buildResumenRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
+  Widget _buildResumenRow(IconData icon, String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
               color: Colors.grey[600],
             ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
+          ],
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1a1a1a),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

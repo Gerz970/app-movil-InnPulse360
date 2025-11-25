@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 import '../features/login/login_screen.dart';
 import '../features/login/register_screen.dart';
 import '../features/perfil/screens/perfil_screen.dart';
-
+import '../features/transporte/screens/transporte_main_screen.dart';
+import '../features/transporte/screens/transporte_create_screen.dart';
+import '../features/transporte/screens/transporte_detail_screen.dart';
+import '../features/transporte/models/servicio_transporte_model.dart';
 
 class RouteItem {
   final String nombre; // Nombre de la ruta
@@ -53,5 +56,30 @@ final List<RouteItem> routes = [
     ruta: '/perfil', // ruta de la pantalla
     screen: const PerfilScreen(), // clase de la screen
     permisos: ['*'] //permisos de la pantalla, * significa que requiere autenticación
-  )
+  ),
+  // Rutas de transporte
+  RouteItem(
+    nombre: 'TransporteMainScreen',
+    ruta: '/transporte',
+    screen: const TransporteMainScreen(),
+    permisos: ['*'], // Ajustar permisos según necesidad
+  ),
+  RouteItem(
+    nombre: 'TransporteCreateScreen',
+    ruta: '/transporte/nuevo',
+    screen: const TransporteCreateScreen(),
+    permisos: ['*'],
+  ),
+  RouteItem(
+    nombre: 'TransporteDetailScreen',
+    ruta: '/transporte/detalle',
+    screen: TransporteDetailScreen(servicio: ServicioTransporteModel(
+      destino: '', 
+      fechaServicio: DateTime.now(), 
+      horaServicio: '', 
+      empleadoId: 0, 
+      costoViaje: 0
+    )), // Placeholder, se debe pasar el objeto real mediante extra
+    permisos: ['*'],
+  ),
 ];
