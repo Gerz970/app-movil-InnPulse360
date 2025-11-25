@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../core/services/geolocalizacion_service.dart';
 import '../controllers/transporte_controller.dart';
 import '../models/servicio_transporte_model.dart';
 
@@ -16,12 +17,19 @@ class TransporteCreateScreen extends StatefulWidget {
 class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
   final _observacionesController = TextEditingController();
   final MapController _mapController = MapController();
+  final GeolocalizacionService _geoService = GeolocalizacionService();
   
   LatLng? _ubicacionOrigen;
   LatLng? _ubicacionDestino;
   LatLng? _miUbicacionActual;
   double? _distanciaKm;
   bool _cargandoUbicacion = true;
+  
+  // Direcciones legibles
+  String? _direccionOrigenTexto;
+  String? _direccionDestinoTexto;
+  bool _cargandoDireccionOrigen = false;
+  bool _cargandoDireccionDestino = false;
 
   @override
   void initState() {
@@ -35,23 +43,78 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
     final pos = await controller.obtenerUbicacionActual();
     
     if (mounted && pos != null && pos is Position) {
+      final ubicacion = LatLng(pos.latitude, pos.longitude);
       setState(() {
-        _miUbicacionActual = LatLng(pos.latitude, pos.longitude);
-        // Por defecto, el origen es la ubicación actual
-        _ubicacionOrigen = _miUbicacionActual;
+        _miUbicacionActual = ubicacion;
+        _ubicacionOrigen = ubicacion;
         _cargandoUbicacion = false;
+        _cargandoDireccionOrigen = true;
       });
+      
+      // Obtener dirección del origen
+      try {
+        print('📍 Iniciando obtención de dirección para origen: ${pos.latitude}, ${pos.longitude}');
+        final direccion = await _geoService.obtenerDireccionDesdeCoordenadas(
+          pos.latitude,
+          pos.longitude,
+        );
+        
+        print('✅ Dirección obtenida para origen: $direccion');
+        
+        if (mounted) {
+          setState(() {
+            _direccionOrigenTexto = direccion;
+            _cargandoDireccionOrigen = false;
+          });
+        }
+      } catch (e) {
+        print('❌ Error al obtener dirección de origen: $e');
+        if (mounted) {
+          setState(() {
+            _direccionOrigenTexto = "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
+            _cargandoDireccionOrigen = false;
+          });
+        }
+      }
     } else {
        if (mounted) setState(() => _cargandoUbicacion = false);
     }
   }
 
-  void _onMapTap(TapPosition tapPosition, LatLng point) {
+  void _onMapTap(TapPosition tapPosition, LatLng point) async {
     setState(() {
       // Si ya tengo origen, el tap define el destino
       _ubicacionDestino = point;
+      _cargandoDireccionDestino = true;
+      _direccionDestinoTexto = "Cargando dirección...";
       _calcularDistancia();
     });
+    
+    // Obtener dirección del destino
+    try {
+      print('📍 Iniciando obtención de dirección para destino: ${point.latitude}, ${point.longitude}');
+      final direccion = await _geoService.obtenerDireccionDesdeCoordenadas(
+        point.latitude,
+        point.longitude,
+      );
+      
+      print('✅ Dirección obtenida para destino: $direccion');
+      
+      if (mounted) {
+        setState(() {
+          _direccionDestinoTexto = direccion;
+          _cargandoDireccionDestino = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error al obtener dirección de destino: $e');
+      if (mounted) {
+        setState(() {
+          _direccionDestinoTexto = "${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}";
+          _cargandoDireccionDestino = false;
+        });
+      }
+    }
   }
 
   void _calcularDistancia() {
@@ -248,11 +311,25 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
                         const SizedBox(width: 8),
                         const Text('Origen: ', style: TextStyle(color: Colors.grey)),
                         Expanded(
-                          child: Text(
-                            _formatearCoordenadas(_ubicacionOrigen),
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                            maxLines: 1, overflow: TextOverflow.ellipsis
-                          ),
+                          child: _cargandoDireccionOrigen
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Cargando dirección...', style: TextStyle(fontStyle: FontStyle.italic)),
+                                  ],
+                                )
+                              : Text(
+                                  _direccionOrigenTexto ?? "Ubicación actual",
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                         ),
                       ],
                     ),
@@ -265,11 +342,25 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
                         const SizedBox(width: 8),
                         const Text('Destino: ', style: TextStyle(color: Colors.grey)),
                         Expanded(
-                          child: Text(
-                            _formatearCoordenadas(_ubicacionDestino),
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                            maxLines: 1, overflow: TextOverflow.ellipsis
-                          ),
+                          child: _cargandoDireccionDestino
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Cargando dirección...', style: TextStyle(fontStyle: FontStyle.italic)),
+                                  ],
+                                )
+                              : Text(
+                                  _direccionDestinoTexto ?? "Seleccionar destino",
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                         ),
                       ],
                     ),
@@ -346,16 +437,11 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
     );
   }
 
-  String _formatearCoordenadas(LatLng? pos) {
-    if (pos == null) return "Seleccionar...";
-    return "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
-  }
-
   void _solicitarViaje(TransporteController controller) async {
     if (_ubicacionOrigen == null || _ubicacionDestino == null) return;
 
     final nuevoServicio = ServicioTransporteModel(
-      destino: "Destino seleccionado en mapa",
+      destino: _direccionDestinoTexto ?? "Destino seleccionado en mapa",
       fechaServicio: DateTime.now(),
       horaServicio: "${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}",
       empleadoId: 1,
@@ -365,8 +451,8 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
       longitudOrigen: _ubicacionOrigen!.longitude,
       latitudDestino: _ubicacionDestino!.latitude,
       longitudDestino: _ubicacionDestino!.longitude,
-      direccionOrigen: _formatearCoordenadas(_ubicacionOrigen),
-      direccionDestino: _formatearCoordenadas(_ubicacionDestino),
+      direccionOrigen: _direccionOrigenTexto,
+      direccionDestino: _direccionDestinoTexto,
       distanciaKm: double.parse((_distanciaKm ?? 0).toStringAsFixed(2)),
     );
 
@@ -381,6 +467,8 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
         setState(() {
           _ubicacionDestino = null;
           _distanciaKm = null;
+          _direccionDestinoTexto = null;
+          _cargandoDireccionDestino = false;
           _observacionesController.clear();
         });
         
