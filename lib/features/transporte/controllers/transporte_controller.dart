@@ -65,5 +65,26 @@ class TransporteController extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<bool> crearServicioDesdeReservacion(ServicioTransporteModel servicio, int reservacionId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _service.createServicioDesdeReservacion(servicio.toJson(), reservacionId);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await fetchServicios();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
 

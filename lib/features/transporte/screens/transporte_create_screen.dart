@@ -8,7 +8,12 @@ import '../controllers/transporte_controller.dart';
 import '../models/servicio_transporte_model.dart';
 
 class TransporteCreateScreen extends StatefulWidget {
-  const TransporteCreateScreen({super.key});
+  final int? reservacionId; // Nuevo parámetro opcional
+  
+  const TransporteCreateScreen({
+    super.key,
+    this.reservacionId, // Opcional
+  });
 
   @override
   State<TransporteCreateScreen> createState() => _TransporteCreateScreenState();
@@ -38,46 +43,80 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
   }
 
   Future<void> _inicializarUbicacion() async {
-    // Obtener ubicación actual al iniciar
-    final controller = Provider.of<TransporteController>(context, listen: false);
-    final pos = await controller.obtenerUbicacionActual();
-    
-    if (mounted && pos != null && pos is Position) {
-      final ubicacion = LatLng(pos.latitude, pos.longitude);
-      setState(() {
-        _miUbicacionActual = ubicacion;
-        _ubicacionOrigen = ubicacion;
-        _cargandoUbicacion = false;
-        _cargandoDireccionOrigen = true;
-      });
+    try {
+      // Obtener ubicación actual al iniciar con timeout
+      final controller = Provider.of<TransporteController>(context, listen: false);
       
-      // Obtener dirección del origen
+      // Intentar obtener ubicación con timeout de 15 segundos
+      dynamic pos;
       try {
-        print('📍 Iniciando obtención de dirección para origen: ${pos.latitude}, ${pos.longitude}');
-        final direccion = await _geoService.obtenerDireccionDesdeCoordenadas(
-          pos.latitude,
-          pos.longitude,
-        );
-        
-        print('✅ Dirección obtenida para origen: $direccion');
-        
-        if (mounted) {
-          setState(() {
-            _direccionOrigenTexto = direccion;
-            _cargandoDireccionOrigen = false;
-          });
-        }
+        pos = await controller.obtenerUbicacionActual()
+            .timeout(const Duration(seconds: 15));
       } catch (e) {
-        print('❌ Error al obtener dirección de origen: $e');
+        print('⚠️ Timeout o error al obtener ubicación: $e');
+        pos = null;
+      }
+      
+      if (mounted && pos != null && pos is Position) {
+        final ubicacion = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _miUbicacionActual = ubicacion;
+          _ubicacionOrigen = ubicacion;
+          _cargandoUbicacion = false;
+          _cargandoDireccionOrigen = true;
+        });
+        
+        // Obtener dirección del origen
+        try {
+          print('📍 Iniciando obtención de dirección para origen: ${pos.latitude}, ${pos.longitude}');
+          final direccion = await _geoService.obtenerDireccionDesdeCoordenadas(
+            pos.latitude,
+            pos.longitude,
+          ).timeout(const Duration(seconds: 10), onTimeout: () {
+            return "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
+          });
+          
+          print('✅ Dirección obtenida para origen: $direccion');
+          
+          if (mounted) {
+            setState(() {
+              _direccionOrigenTexto = direccion;
+              _cargandoDireccionOrigen = false;
+            });
+          }
+        } catch (e) {
+          print('❌ Error al obtener dirección de origen: $e');
+          if (mounted) {
+            setState(() {
+              _direccionOrigenTexto = "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
+              _cargandoDireccionOrigen = false;
+            });
+          }
+        }
+      } else {
+        // Si no se pudo obtener ubicación, usar ubicación por defecto (CDMX)
         if (mounted) {
           setState(() {
-            _direccionOrigenTexto = "${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}";
+            _miUbicacionActual = const LatLng(19.4326, -99.1332);
+            _ubicacionOrigen = const LatLng(19.4326, -99.1332);
+            _cargandoUbicacion = false;
+            _direccionOrigenTexto = "Ciudad de México, México";
             _cargandoDireccionOrigen = false;
           });
         }
       }
-    } else {
-       if (mounted) setState(() => _cargandoUbicacion = false);
+    } catch (e) {
+      print('❌ Error al inicializar ubicación: $e');
+      // En caso de error, usar ubicación por defecto
+      if (mounted) {
+        setState(() {
+          _miUbicacionActual = const LatLng(19.4326, -99.1332);
+          _ubicacionOrigen = const LatLng(19.4326, -99.1332);
+          _cargandoUbicacion = false;
+          _direccionOrigenTexto = "Ciudad de México, México";
+          _cargandoDireccionOrigen = false;
+        });
+      }
     }
   }
 
@@ -444,9 +483,10 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
       destino: _direccionDestinoTexto ?? "Destino seleccionado en mapa",
       fechaServicio: DateTime.now(),
       horaServicio: "${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}",
-      empleadoId: 1,
+      empleadoId: null, // No asignar empleado - se hará en proceso aparte
       costoViaje: double.parse(((_distanciaKm ?? 0) * 15.0).toStringAsFixed(2)),
-      observacionesCliente: _observacionesController.text,
+      observacionesCliente: _observacionesController.text.isEmpty ? null : _observacionesController.text,
+      // No incluir observacionesEmpleado ni calificacionViaje - se harán en proceso aparte
       latitudOrigen: _ubicacionOrigen!.latitude,
       longitudOrigen: _ubicacionOrigen!.longitude,
       latitudDestino: _ubicacionDestino!.latitude,
@@ -456,7 +496,10 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
       distanciaKm: double.parse((_distanciaKm ?? 0).toStringAsFixed(2)),
     );
 
-    final exito = await controller.crearServicio(nuevoServicio);
+    // Si hay reservacionId, usar el método que incluye reservación
+    final exito = widget.reservacionId != null
+        ? await controller.crearServicioDesdeReservacion(nuevoServicio, widget.reservacionId!)
+        : await controller.crearServicio(nuevoServicio);
 
     if (mounted) {
       if (exito) {
@@ -472,8 +515,10 @@ class _TransporteCreateScreenState extends State<TransporteCreateScreen> {
           _observacionesController.clear();
         });
         
-        // Opcional: Navegar a la pestaña de "Solicitados" (index 0)
-        // Esto requeriría acceso al estado de TransporteMainScreen o un bus de eventos
+        // Si venimos de una reservación, regresar a los detalles
+        if (widget.reservacionId != null) {
+          Navigator.pop(context);
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${controller.error}')),

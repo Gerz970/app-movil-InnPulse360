@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import './models/reservas_model.dart';
 import './reservas_galeria_screen.dart';
 import '../../widgets/app_sidebar.dart';
+import '../transporte/screens/transporte_create_screen.dart';
 
 /// Pantalla de detalles de una reservación
 class ReservasDetailScreen extends StatelessWidget {
@@ -207,6 +208,35 @@ class ReservasDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 32),
+                  // Botón Solicitar Transporte (solo si está activa)
+                  if (isActive)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TransporteCreateScreen(
+                                reservacionId: reservacion.idReservacion,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.directions_car),
+                        label: const Text("Solicitar Transporte"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF667eea),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ),
+                  if (isActive) const SizedBox(height: 16),
                   // Botón para regresar
                   SizedBox(
                     width: double.infinity,

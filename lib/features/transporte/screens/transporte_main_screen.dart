@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../controllers/transporte_controller.dart';
 import 'transporte_list_screen.dart';
 import 'transporte_create_screen.dart';
 
@@ -28,32 +26,30 @@ class _TransporteMainScreenState extends State<TransporteMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TransporteController(),
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt),
-              label: 'Solicitados',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_location_alt),
-              label: 'Solicitar',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: 'Historial',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: const Color(0xFF667eea),
-          onTap: _onItemTapped,
-        ),
+    // El TransporteController ahora está disponible globalmente desde main.dart
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt),
+            label: 'Solicitados',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_location_alt),
+            label: 'Solicitar',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'Historial',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xFF667eea),
+        onTap: _onItemTapped,
       ),
     );
   }
