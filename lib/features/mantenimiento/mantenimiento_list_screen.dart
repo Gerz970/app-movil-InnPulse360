@@ -5,6 +5,7 @@ import './models/mantenimiento_model.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
 import '../login/login_screen.dart';
+import 'mantenimiento_detail_screen.dart';
 
 class MantenimientosListScreen extends StatefulWidget {
   const MantenimientosListScreen({super.key});
@@ -143,7 +144,8 @@ class _MantenimientosListScreenState extends State<MantenimientosListScreen> {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: controller.mantenimientos.length,
-      itemBuilder: (_, index) => _buildMantenimientoCard(controller.mantenimientos[index]),
+      itemBuilder: (_, index) =>
+          _buildMantenimientoCard(controller.mantenimientos[index]),
     );
   }
 
@@ -155,7 +157,12 @@ class _MantenimientosListScreenState extends State<MantenimientosListScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MantenimientoDetailScreen(mantenimiento: m),
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -254,7 +261,6 @@ class _MantenimientosListScreenState extends State<MantenimientosListScreen> {
                     ),
                 ],
               ),
-
             ],
           ),
         ),
@@ -263,54 +269,61 @@ class _MantenimientosListScreenState extends State<MantenimientosListScreen> {
   }
 
   Widget _buildFechaInfo(IconData icon, String label, String value) {
-  return Row(
-    children: [
-      Icon(icon, size: 16, color: Colors.grey[600]),
-      const SizedBox(width: 6),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF1a1a1a),
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF1a1a1a),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 }
 
 String _estatusTexto(int estatus) {
   switch (estatus) {
-    case 0: return "Pendiente";
-    case 1: return "Pendiente";
-    case 2: return "Terminado";
-    default: return "Desconocido";
+    case 0:
+      return "Pendiente";
+    case 1:
+      return "Pendiente";
+    case 2:
+      return "Terminado";
+    default:
+      return "Desconocido";
   }
 }
 
 Color _estatusColor(int estatus) {
   switch (estatus) {
-    case 0: return Colors.orange;
-    case 1: return Colors.orange;
-    case 2: return Colors.green;
-    default: return Colors.grey;
+    case 0:
+      return Colors.orange;
+    case 1:
+      return Colors.orange;
+    case 2:
+      return Colors.green;
+    default:
+      return Colors.grey;
   }
 }
-
