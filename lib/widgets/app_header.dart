@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
 import '../features/perfil/screens/perfil_screen.dart';
 import '../features/login/login_screen.dart';
+import '../features/chat/screens/chat_screen.dart';
 
 /// Widget de header global reutilizable para toda la aplicación
 /// Muestra información del usuario, foto de perfil y botones de acción
@@ -129,7 +130,7 @@ class AppHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Botón circular "+"
+              // Botón circular Asistente IA
               Container(
                 width: 40,
                 height: 40,
@@ -140,12 +141,17 @@ class AppHeader extends StatelessWidget {
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   icon: const Icon(
-                    Icons.add,
+                    Icons.smart_toy,
                     color: Color(0xFF667eea),
                     size: 22,
                   ),
                   onPressed: () {
-                    // Sin funcionalidad por ahora
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChatScreen(),
+                      ),
+                    );
                   },
                 ),
               ),
