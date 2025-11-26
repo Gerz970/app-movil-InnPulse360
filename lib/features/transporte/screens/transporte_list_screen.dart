@@ -27,70 +27,91 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.mostrarActivos ? 'Viajes Solicitados' : 'Historial de Viajes'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        automaticallyImplyLeading: false, // No mostrar flecha de regreso si es tab principal
-      ),
-      body: Consumer<TransporteController>(
-        builder: (context, controller, _) {
-          if (controller.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+    // Remover Scaffold - ahora el Scaffold principal está en TransporteMainScreen
+    return Consumer<TransporteController>(
+      builder: (context, controller, _) {
+        if (controller.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.error != null) {
+          return Center(child: Text('Error: ${controller.error}'));
+        }
+
+        // Filtrar servicios según la pestaña
+        final serviciosFiltrados = controller.servicios.where((s) {
+          // Asumimos: 1 = Activo, 2 = Completado/Cancelado
+          // Ajustar lógica según valores reales de idEstatus
+          if (widget.mostrarActivos) {
+            return s.idEstatus == 1;
+          } else {
+            return s.idEstatus != 1;
           }
+        }).toList();
 
-          if (controller.error != null) {
-            return Center(child: Text('Error: ${controller.error}'));
-          }
-
-          // Filtrar servicios según la pestaña
-          final serviciosFiltrados = controller.servicios.where((s) {
-            // Asumimos: 1 = Activo, 2 = Completado/Cancelado
-            // Ajustar lógica según valores reales de idEstatus
-            if (widget.mostrarActivos) {
-              return s.idEstatus == 1;
-            } else {
-              return s.idEstatus != 1;
-            }
-          }).toList();
-
-          if (serviciosFiltrados.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.mostrarActivos ? Icons.directions_car : Icons.history,
-                    size: 64,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.mostrarActivos 
-                        ? 'No tienes viajes activos' 
-                        : 'No tienes historial de viajes',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.fetchServicios(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: serviciosFiltrados.length,
-              itemBuilder: (context, index) {
-                final servicio = serviciosFiltrados[index];
-                return _buildServicioCard(servicio);
-              },
+        if (serviciosFiltrados.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  widget.mostrarActivos ? Icons.directions_car : Icons.history,
+                  size: 64,
+                  color: Colors.grey.shade300,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  widget.mostrarActivos 
+                      ? 'No tienes viajes activos' 
+                      : 'No tienes historial de viajes',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ],
             ),
           );
-        },
-      ),
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => controller.fetchServicios(),
+          child: Column(
+            children: [
+              // Título de la sección (reemplaza el AppBar)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      widget.mostrarActivos ? 'Viajes Solicitados' : 'Historial de Viajes',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1a1a1a),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Lista de viajes
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: serviciosFiltrados.length,
+                  itemBuilder: (context, index) {
+                    final servicio = serviciosFiltrados[index];
+                    return _buildServicioCard(servicio);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
