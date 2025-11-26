@@ -8,4 +8,6 @@ class EndpointsMantenimiento {
   
   static String obtener_por_empleado_estatus(int empleadoId, int estatus) => "mantenimientos/empleado-estatus/$empleadoId/$estatus";
 
+  static String galeria(int mantenimientoId) => "mantenimientos/$mantenimientoId/galeria";
+
 }

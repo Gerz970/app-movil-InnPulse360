@@ -81,4 +81,97 @@ class MantenimientoService {
     return data.map((e) => Mantenimiento.fromJson(e)).toList();
   }
 
+  Future<Response> fetchGaleria(int incidenciaId) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsMantenimiento.galeria(incidenciaId);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición GET
+    try {
+      print('📸 Cargando galería para incidencia: $incidenciaId');
+      print('URL: $url');
+      
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: headers,
+          followRedirects: true,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      print('✅ Galería cargada. Status: ${response.statusCode}');
+      print('Response data: ${response.data}');
+      
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      print('❌ Error al cargar galería: $e');
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      rethrow;
+    }
+  }
+
+  Future<Response> uploadFotoGaleria(int incidenciaId, String filePath) async {
+    // Obtener token de la sesión
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    // Construir la URL
+    final url = baseUrl + EndpointsMantenimiento.galeria(incidenciaId);
+
+    // Crear FormData con el archivo
+    FormData formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: 'incidencia_${incidenciaId}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      ),
+    });
+
+    // Configurar headers con el token de autenticación
+    // No incluir Content-Type para multipart, Dio lo maneja automáticamente
+    final headers = {
+      'Authorization': 'Bearer $token',
+    };
+
+    // Hacer la petición POST con multipart
+    try {
+      final response = await _dio.post(
+        url,
+        data: formData,
+        options: Options(headers: headers),
+      );
+
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      rethrow;
+    }
+  }
 }
