@@ -81,5 +81,28 @@ class TransporteService {
       rethrow;
     }
   }
+
+  Future<Response> createServicioDesdeReservacion(
+    Map<String, dynamic> data,
+    int reservacionId,
+  ) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No hay token de autenticación disponible');
+
+    final url = baseUrl + EndpointsTransporte.list;
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.post(
+        url,
+        data: data,
+        queryParameters: {'reservacion_id': reservacionId}, // Enviar como query parameter
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
