@@ -6,6 +6,7 @@ import '../features/common/under_construction_screen.dart';
 import '../features/hoteles/controllers/hotel_controller.dart';
 import '../features/perfil/screens/perfil_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
+import '../features/mensajeria/screens/conversaciones_list_screen.dart';
 
 /// Widget de sidebar lateral reutilizable para toda la aplicación
 /// Muestra información del usuario y lista de módulos disponibles
@@ -233,22 +234,36 @@ class AppSidebar extends StatelessWidget {
 
                 // === ASISTENTE IA ===
                 // Item fijo para el chat con IA
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: _buildModuleItem(
-                    context: context,
-                    icon: Icons.smart_toy,
-                    title: 'Asistente IA',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ChatScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                _buildModuleItem(
+                  context: context,
+                  icon: Icons.smart_toy,
+                  title: 'Asistente IA',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChatScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                // === MENSAJERÍA ===
+                // Item fijo para mensajería
+                _buildModuleItem(
+                  context: context,
+                  icon: Icons.message,
+                  title: 'Mensajería',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ConversacionesListScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 // Lista de módulos - construida dinámicamente desde el backend
