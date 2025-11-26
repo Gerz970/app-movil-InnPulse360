@@ -265,6 +265,7 @@ class _ReservasConfirmacionScreenState
         'fecha_salida': fechaFinReserva,
         'duracion': duracion,
         'id_estatus': 1,
+        'monto_reserva': widget.precioTotal,
         // No incluir codigo_reservacion - el backend lo generará automáticamente
       };
       print("  - reservaData: $reservaData");
