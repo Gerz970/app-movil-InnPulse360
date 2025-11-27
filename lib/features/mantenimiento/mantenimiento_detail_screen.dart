@@ -10,10 +10,7 @@ import 'package:provider/provider.dart';
 class MantenimientoDetailScreen extends StatefulWidget {
   final Mantenimiento mantenimiento;
 
-  const MantenimientoDetailScreen({
-    super.key,
-    required this.mantenimiento,
-  });
+  const MantenimientoDetailScreen({super.key, required this.mantenimiento});
 
   @override
   State<MantenimientoDetailScreen> createState() =>
@@ -29,32 +26,13 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller =
-          Provider.of<MantenimientoController>(context, listen: false);
+      final controller = Provider.of<MantenimientoController>(
+        context,
+        listen: false,
+      );
 
       controller.fetchGaleria(widget.mantenimiento.idMantenimiento);
     });
-  }
-
-  Future<void> _elegirFoto(BuildContext context) async {
-    final controller =
-        Provider.of<MantenimientoController>(context, listen: false);
-
-    final XFile? foto = await _picker.pickImage(source: ImageSource.camera);
-
-    if (foto == null) return;
-
-    final success = await controller.uploadPhoto(
-      widget.mantenimiento.idMantenimiento,
-      foto,
-      'despues'
-    );
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(success ? "Foto subida con éxito" : "Error al subir foto")),
-    );
   }
 
   // ------------------------------------------------------------
@@ -87,8 +65,11 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
       return;
     }
 
-    final controller = Provider.of<MantenimientoController>(context, listen: false);
-    
+    final controller = Provider.of<MantenimientoController>(
+      context,
+      listen: false,
+    );
+
     // Subir todas las fotos
     bool todasSubidas = true;
     for (var foto in fotos) {
@@ -114,7 +95,9 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
       return;
     }
 
-    final success = await controller.cambiarEstatusMantenimiento(widget.mantenimiento.idMantenimiento);
+    final success = await controller.cambiarEstatusMantenimiento(
+      widget.mantenimiento.idMantenimiento,
+    );
 
     if (!mounted) return;
 
@@ -129,7 +112,9 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(controller.errorMessage ?? 'Error al terminar limpieza'),
+          content: Text(
+            controller.errorMessage ?? 'Error al terminar limpieza',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -252,8 +237,7 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
                   color: estatusColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.build_rounded,
-                    color: estatusColor, size: 28),
+                child: Icon(Icons.build_rounded, color: estatusColor, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -338,17 +322,16 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
             children: [
               Icon(icon, size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+              Text(
+                label,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+              ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -410,11 +393,24 @@ class _FormularioTerminarMantenimientoState
   bool _isSubiendo = false;
   Map<int, Uint8List> _fotoBytes = {};
 
+  @override
+  void initState() {
+    super.initState();
+    _cargarBytesIniciales();
+  }
+
+  Future<void> _cargarBytesIniciales() async {
+    for (int i = 0; i < widget.fotosSeleccionadas.length; i++) {
+      _fotoBytes[i] = await widget.fotosSeleccionadas[i].readAsBytes();
+    }
+    setState(() {});
+  }
+
   Future<void> _seleccionarFotos() async {
     if (widget.fotosSeleccionadas.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Máximo 5 fotos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Máximo 5 fotos')));
       return;
     }
 
@@ -430,8 +426,8 @@ class _FormularioTerminarMantenimientoState
     final agregar = fotos.take(disponibles).toList();
 
     for (var x in agregar) {
-      _fotoBytes[widget.fotosSeleccionadas.length + agregar.indexOf(x)] =
-          await x.readAsBytes();
+      final bytes = await x.readAsBytes();
+      _fotoBytes[_fotoBytes.length] = bytes;
     }
 
     setState(() {
@@ -482,7 +478,8 @@ class _FormularioTerminarMantenimientoState
                 ? null
                 : _seleccionarFotos,
             label: Text(
-                "Agregar Fotos (${widget.fotosSeleccionadas.length}/5)"),
+              "Agregar Fotos (${widget.fotosSeleccionadas.length}/5)",
+            ),
           ),
 
           if (widget.fotosSeleccionadas.isNotEmpty)
@@ -512,17 +509,20 @@ class _FormularioTerminarMantenimientoState
                             onTap: () {
                               setState(() {
                                 widget.fotosSeleccionadas.removeAt(index);
-                                _fotoBytes.clear();
+                                _reconstruirBytes();
                               });
                             },
                             child: const CircleAvatar(
                               radius: 12,
                               backgroundColor: Colors.red,
-                              child: Icon(Icons.close,
-                                  color: Colors.white, size: 16),
+                              child: Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   );
@@ -547,5 +547,12 @@ class _FormularioTerminarMantenimientoState
         ],
       ),
     );
+  }
+
+  Future<void> _reconstruirBytes() async {
+    _fotoBytes.clear();
+    for (int i = 0; i < widget.fotosSeleccionadas.length; i++) {
+      _fotoBytes[i] = await widget.fotosSeleccionadas[i].readAsBytes();
+    }
   }
 }
