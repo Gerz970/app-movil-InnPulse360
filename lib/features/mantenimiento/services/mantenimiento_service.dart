@@ -1,5 +1,6 @@
 import 'package:app_movil_innpulse/features/mantenimiento/models/mantenimiento_model.dart';
 import 'package:dio/dio.dart'; // se importa libreria para hacer peticiones HTTP al backend
+import 'package:image_picker/image_picker.dart';
 import '../../../api/api_config.dart'; // importar configuracion del api
 import '../../../api/endpoints_incidencias.dart'; // importar endpoints de incidencias
 import '../../../api/endpoints_mantenimiento.dart'; // importar endpoints de reservaciones
@@ -131,7 +132,7 @@ class MantenimientoService {
     }
   }
 
-  Future<Response> uploadFotoGaleria(int incidenciaId, String filePath) async {
+  Future<Response> uploadFotoGaleria(int mantenimientoId, XFile xFile, String tipo) async {
     // Obtener token de la sesión
     final token = await _getToken();
     
@@ -144,34 +145,73 @@ class MantenimientoService {
     }
 
     // Construir la URL
-    final url = baseUrl + EndpointsMantenimiento.galeria(incidenciaId);
+    final url = baseUrl + EndpointsMantenimiento.galeria(mantenimientoId);
 
-    // Crear FormData con el archivo
+    // Obtener bytes del archivo usando XFile (funciona tanto en web como en móvil)
+    final fileBytes = await xFile.readAsBytes();
+    final filename = xFile.name.isNotEmpty 
+        ? xFile.name 
+        : 'mantenimiento_${mantenimientoId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    // Crear FormData con el archivo usando bytes
     FormData formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        filePath,
-        filename: 'incidencia_${incidenciaId}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      'file': MultipartFile.fromBytes(
+        fileBytes,
+        filename: filename,
       ),
     });
 
-    // Configurar headers con el token de autenticación
-    // No incluir Content-Type para multipart, Dio lo maneja automáticamente
     final headers = {
       'Authorization': 'Bearer $token',
     };
 
-    // Hacer la petición POST con multipart
     try {
       final response = await _dio.post(
-        url,
+        "$url?tipo=despues",
         data: formData,
         options: Options(headers: headers),
       );
-
-      return response; // Respuesta del API
+      return response;
     } catch (e) {
-      // Manejo de errores
       rethrow;
     }
   }
+
+  Future<Response> cambiarEstatusMantenimiento(int mantenimientoId, Map<String, dynamic> data) async {
+    final token = await _getToken();
+    
+    if (token == null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ''),
+        error: 'No hay token de autenticación disponible',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final url = baseUrl + EndpointsMantenimiento.detail(mantenimientoId);
+
+    // Configurar headers con el token de autenticación
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+
+    // Hacer la petición GET
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
+        options: Options(headers: headers)
+      );
+      
+      return response; // Respuesta del API
+    } catch (e) {
+      // Manejo de errores
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      rethrow;
+    }
+}
 }

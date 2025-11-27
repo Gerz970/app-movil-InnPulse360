@@ -114,13 +114,13 @@ class MantenimientoController extends ChangeNotifier {
   // ---------------------------------------------------------
   //  SUBIR FOTO
   // ---------------------------------------------------------
-  Future<bool> uploadPhoto(int incidenciaId, String filePath) async {
+  Future<bool> uploadPhoto(int incidenciaId, XFile xFile, String tipo) async {
     _isUploadingPhoto = true;
     uploadPhotoError = null;
     notifyListeners();
 
     try {
-      await _service.uploadFotoGaleria(incidenciaId, filePath);
+      await _service.uploadFotoGaleria(incidenciaId, xFile, tipo);
 
       _isUploadingPhoto = false;
       notifyListeners();
@@ -168,10 +168,7 @@ class MantenimientoController extends ChangeNotifier {
     notifyListeners();
   }
 
-    Future<Map<String, dynamic>> terminarMantenimiento(
-    int idMantenimiento,
-    List<XFile> fotos
-  ) async {
+    Future<Map<String, dynamic>> terminarMantenimiento(int idMantenimiento) async {
    
         return {
           "ok": true,
@@ -179,4 +176,34 @@ class MantenimientoController extends ChangeNotifier {
         };
     
     }
+
+  Future<bool> cambiarEstatusMantenimiento(int mantenimientoId) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    final Map<String, dynamic> data = {};
+    final hoy = DateTime.now();
+    final soloFecha = "${hoy.year}-${hoy.month.toString().padLeft(2, '0')}-${hoy.day.toString().padLeft(2, '0')}";
+    data['fecha_termino'] = soloFecha;
+    data['estatus'] = 2;
+
+    try {
+      await _service.cambiarEstatusMantenimiento(mantenimientoId, data);
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if ("$e".contains("NOT_AUTH")) {
+        isNotAuthenticated = true;
+        errorMessage = "Sesión expirada";
+      } else {
+        errorMessage = e.toString();
+      }
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }

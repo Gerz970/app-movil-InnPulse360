@@ -46,7 +46,8 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
 
     final success = await controller.uploadPhoto(
       widget.mantenimiento.idMantenimiento,
-      foto.path,
+      foto,
+      'despues'
     );
 
     if (!mounted) return;
@@ -68,30 +69,71 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
       ),
       builder: (_) {
         return _FormularioTerminarMantenimiento(
-          limpiezaId: widget.mantenimiento.idMantenimiento,
+          mantenimientoId: widget.mantenimiento.idMantenimiento,
           fotosSeleccionadas: _fotosSeleccionadas,
           picker: _picker,
-          onTerminar: _terminarLimpieza,
+          onTerminar: _terminarMantenimiento,
         );
       },
     );
   }
 
   // Recibir fotos y enviarlas al backend
-  Future<void> _terminarLimpieza(List<XFile> fotos) async {
-    final controller =
-        Provider.of<MantenimientoController>(context, listen: false);
+  Future<void> _terminarMantenimiento(List<XFile> fotos) async {
+    if (fotos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes subir al menos una foto')),
+      );
+      return;
+    }
 
-    await controller.terminarMantenimiento(
-      widget.mantenimiento.idMantenimiento,
-      fotos,
-    );
+    final controller = Provider.of<MantenimientoController>(context, listen: false);
+    
+    // Subir todas las fotos
+    bool todasSubidas = true;
+    for (var foto in fotos) {
+      final success = await controller.uploadPhoto(
+        widget.mantenimiento.idMantenimiento,
+        foto,
+        'despues',
+      );
+      if (!success) {
+        todasSubidas = false;
+      }
+    }
+
+    if (!todasSubidas) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al subir algunas fotos'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final success = await controller.cambiarEstatusMantenimiento(widget.mantenimiento.idMantenimiento);
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Mantenimiento finalizado")),
-    );
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Limpieza terminada correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(controller.errorMessage ?? 'Error al terminar limpieza'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -345,18 +387,14 @@ class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
   }
 }
 
-/* ------------------------------------------------------
-   FORMULARIO DE TERMINAR LIMPIEZA (NO CAMBIAR NOMBRE)
-   ------------------------------------------------------ */
-
 class _FormularioTerminarMantenimiento extends StatefulWidget {
-  final int limpiezaId;
+  final int mantenimientoId;
   final List<XFile> fotosSeleccionadas;
   final ImagePicker picker;
   final Future<void> Function(List<XFile> fotos) onTerminar;
 
   const _FormularioTerminarMantenimiento({
-    required this.limpiezaId,
+    required this.mantenimientoId,
     required this.fotosSeleccionadas,
     required this.picker,
     required this.onTerminar,
