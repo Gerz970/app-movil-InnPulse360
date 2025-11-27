@@ -160,23 +160,6 @@ class MantenimientoController extends ChangeNotifier {
     }
   }
 
-  // ---------------------------------------------------------
-  //  GUARDAR FOTO LOCALMENTE
-  // ---------------------------------------------------------
-  void setPhoto(int id, File photo) {
-    fotos[id] = photo;
-    notifyListeners();
-  }
-
-    Future<Map<String, dynamic>> terminarMantenimiento(int idMantenimiento) async {
-   
-        return {
-          "ok": true,
-          "msg": "Mantenimiento terminado correctamente",
-        };
-    
-    }
-
   Future<bool> cambiarEstatusMantenimiento(int mantenimientoId) async {
     isLoading = true;
     errorMessage = null;
@@ -192,6 +175,7 @@ class MantenimientoController extends ChangeNotifier {
       await _service.cambiarEstatusMantenimiento(mantenimientoId, data);
       isLoading = false;
       notifyListeners();
+      fetchMantenimientos();
       return true;
     } catch (e) {
       if ("$e".contains("NOT_AUTH")) {

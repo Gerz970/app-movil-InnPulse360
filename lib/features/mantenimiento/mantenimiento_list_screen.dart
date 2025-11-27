@@ -247,15 +247,15 @@ class _MantenimientosListScreenState extends State<MantenimientosListScreen> {
                   Expanded(
                     child: _buildFechaInfo(
                       Icons.calendar_today,
-                      'Programado',
+                      'Agendado',
                       m.fechaFormateada,
                     ),
                   ),
                   if (m.fechaTermino != null)
                     Expanded(
                       child: _buildFechaInfo(
-                        Icons.check_circle,
-                        'Terminado',
+                        Icons.calendar_month_outlined,
+                        'Para terminar',
                         m.fechaFormateada ?? '',
                       ),
                     ),
