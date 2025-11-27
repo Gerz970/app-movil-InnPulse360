@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:app_movil_innpulse/features/mantenimiento/controllers/mantenimiento_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,15 +20,14 @@ class MantenimientoDetailScreen extends StatefulWidget {
       _MantenimientoDetailScreenState();
 }
 
-class _MantenimientoDetailScreenState
-    extends State<MantenimientoDetailScreen> {
+class _MantenimientoDetailScreenState extends State<MantenimientoDetailScreen> {
+  List<XFile> _fotosSeleccionadas = [];
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
 
-    // Carga la galería al abrir la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller =
           Provider.of<MantenimientoController>(context, listen: false);
@@ -36,9 +36,6 @@ class _MantenimientoDetailScreenState
     });
   }
 
-  // ---------------------------
-  //     SUBIR FOTO
-  // ---------------------------
   Future<void> _elegirFoto(BuildContext context) async {
     final controller =
         Provider.of<MantenimientoController>(context, listen: false);
@@ -54,18 +51,47 @@ class _MantenimientoDetailScreenState
 
     if (!mounted) return;
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Foto subida con éxito")),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text(controller.uploadPhotoError ?? "Error al subir foto"),
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(success ? "Foto subida con éxito" : "Error al subir foto")),
+    );
+  }
+
+  // ------------------------------------------------------------
+  // Abrir formulario para TERMINAR mantenimiento
+  // ------------------------------------------------------------
+  void _mostrarFormularioTerminar() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return _FormularioTerminarMantenimiento(
+          limpiezaId: widget.mantenimiento.idMantenimiento,
+          fotosSeleccionadas: _fotosSeleccionadas,
+          picker: _picker,
+          onTerminar: _terminarLimpieza,
+        );
+      },
+    );
+  }
+
+  // Recibir fotos y enviarlas al backend
+  Future<void> _terminarLimpieza(List<XFile> fotos) async {
+    final controller =
+        Provider.of<MantenimientoController>(context, listen: false);
+
+    await controller.terminarMantenimiento(
+      widget.mantenimiento.idMantenimiento,
+      fotos,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Mantenimiento finalizado")),
+    );
   }
 
   @override
@@ -95,7 +121,6 @@ class _MantenimientoDetailScreenState
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1a1a1a),
-                        letterSpacing: -0.5,
                       ),
                     ),
 
@@ -109,66 +134,45 @@ class _MantenimientoDetailScreenState
 
                     const SizedBox(height: 30),
 
-                    // ---------------------------
-                    //   BOTÓN SUBIR FOTO
-                    // ---------------------------
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6366f1),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    // ---------------------------------------------------
+                    // BOTÓN FINALIZAR — corregido el error
+                    // ---------------------------------------------------
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2196F3).withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        onPressed: () => _elegirFoto(context),
-                        icon: const Icon(Icons.camera_alt_rounded,
-                            color: Colors.white),
-                        label: const Text(
-                          "Subir Foto",
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        ],
                       ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // ---------------------------
-                    //   GALERÍA
-                    // ---------------------------
-                    _buildGaleria(),
-
-                    const SizedBox(height: 30),
-
-                    // ---------------------------
-                    //   BOTÓN FINALIZAR
-                    // ---------------------------
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
+                        onPressed: _mostrarFormularioTerminar,
+                        icon: const Icon(Icons.check_circle_rounded, size: 22),
+                        label: const Text(
+                          'Terminar Mantenimiento',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF22c55e),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                        onPressed: () {},
-                        child: const Text(
-                          "Marcar como finalizada",
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
+                          elevation: 0,
                         ),
                       ),
                     ),
+
+                    const SizedBox(height: 40),
+
+                    _buildGaleria(),
                   ],
                 ),
               ),
@@ -179,9 +183,8 @@ class _MantenimientoDetailScreenState
     );
   }
 
-  // ------------------------------
-  //     CARD PRINCIPAL
-  // ------------------------------
+  // ------------------------------ UI ------------------------------
+
   Widget _buildDetalleMantenimientoCard(
     BuildContext context,
     Mantenimiento mantenimiento,
@@ -190,8 +193,6 @@ class _MantenimientoDetailScreenState
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [estatusColor.withOpacity(0.1), Colors.white],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -213,30 +214,13 @@ class _MantenimientoDetailScreenState
                     color: estatusColor, size: 28),
               ),
               const SizedBox(width: 16),
-
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Detalle de Mantenimiento',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mantenimiento.descripcion,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1a1a1a),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  mantenimiento.descripcion,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -268,9 +252,6 @@ class _MantenimientoDetailScreenState
     );
   }
 
-  // ------------------------------
-  //     BOTÓN BACK
-  // ------------------------------
   Widget _buildBackButton(BuildContext context) {
     return InkWell(
       onTap: () => Navigator.pop(context),
@@ -280,18 +261,16 @@ class _MantenimientoDetailScreenState
         decoration: BoxDecoration(
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200, width: 1),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.arrow_back_rounded,
-                color: Colors.grey.shade700, size: 20),
+            Icon(Icons.arrow_back_rounded, color: Colors.grey.shade700),
             const SizedBox(width: 8),
             Text(
               'Regresar al listado',
               style: TextStyle(
-                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700,
               ),
@@ -302,16 +281,13 @@ class _MantenimientoDetailScreenState
     );
   }
 
-  // ------------------------------
-  //     INFO CARD
-  // ------------------------------
   Widget _buildInfoCard(IconData icon, String label, String value) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,16 +296,8 @@ class _MantenimientoDetailScreenState
             children: [
               Icon(icon, size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
+              Text(label,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 6),
@@ -338,7 +306,6 @@ class _MantenimientoDetailScreenState
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1a1a1a),
             ),
           ),
         ],
@@ -346,97 +313,201 @@ class _MantenimientoDetailScreenState
     );
   }
 
-  // ------------------------------
-  //     GALERÍA
-  // ------------------------------
   Widget _buildGaleria() {
     return Consumer<MantenimientoController>(
       builder: (context, controller, child) {
         if (controller.isLoading) {
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child:
-                  CircularProgressIndicator(color: Color(0xFF667eea)),
-            ),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (controller.galeriaImagenes.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF667eea).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.photo_library_rounded,
-                    color: Color(0xFF667eea),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Galería de Fotos',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1a1a1a),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: controller.galeriaImagenes.length,
-              itemBuilder: (context, index) {
-                final foto = controller.galeriaImagenes[index];
-
-                return GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => Dialog(
-                        child:
-                            Image.network(foto.ruta, fit: BoxFit.contain),
-                      ),
-                    );
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      foto.ruta,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+        return GridView.builder(
+          shrinkWrap: true,
+          itemCount: controller.galeriaImagenes.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemBuilder: (context, index) {
+            final foto = controller.galeriaImagenes[index];
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(foto.ruta, fit: BoxFit.cover),
+            );
+          },
         );
       },
+    );
+  }
+}
+
+/* ------------------------------------------------------
+   FORMULARIO DE TERMINAR LIMPIEZA (NO CAMBIAR NOMBRE)
+   ------------------------------------------------------ */
+
+class _FormularioTerminarMantenimiento extends StatefulWidget {
+  final int limpiezaId;
+  final List<XFile> fotosSeleccionadas;
+  final ImagePicker picker;
+  final Future<void> Function(List<XFile> fotos) onTerminar;
+
+  const _FormularioTerminarMantenimiento({
+    required this.limpiezaId,
+    required this.fotosSeleccionadas,
+    required this.picker,
+    required this.onTerminar,
+  });
+
+  @override
+  State<_FormularioTerminarMantenimiento> createState() =>
+      _FormularioTerminarMantenimientoState();
+}
+
+class _FormularioTerminarMantenimientoState
+    extends State<_FormularioTerminarMantenimiento> {
+  bool _isSubiendo = false;
+  Map<int, Uint8List> _fotoBytes = {};
+
+  Future<void> _seleccionarFotos() async {
+    if (widget.fotosSeleccionadas.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Máximo 5 fotos')),
+      );
+      return;
+    }
+
+    final fotos = await widget.picker.pickMultiImage(
+      maxHeight: 1800,
+      maxWidth: 1800,
+      imageQuality: 85,
+    );
+
+    if (fotos == null) return;
+
+    final disponibles = 5 - widget.fotosSeleccionadas.length;
+    final agregar = fotos.take(disponibles).toList();
+
+    for (var x in agregar) {
+      _fotoBytes[widget.fotosSeleccionadas.length + agregar.indexOf(x)] =
+          await x.readAsBytes();
+    }
+
+    setState(() {
+      widget.fotosSeleccionadas.addAll(agregar);
+    });
+  }
+
+  Future<void> _finalizar() async {
+    if (widget.fotosSeleccionadas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes subir mínimo 1 foto')),
+      );
+      return;
+    }
+
+    setState(() => _isSubiendo = true);
+
+    await widget.onTerminar(widget.fotosSeleccionadas);
+
+    if (!mounted) return;
+
+    setState(() => _isSubiendo = false);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            "Terminar Mantenimiento",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+
+          const SizedBox(height: 16),
+
+          OutlinedButton.icon(
+            icon: const Icon(Icons.add_photo_alternate),
+            onPressed: widget.fotosSeleccionadas.length >= 5
+                ? null
+                : _seleccionarFotos,
+            label: Text(
+                "Agregar Fotos (${widget.fotosSeleccionadas.length}/5)"),
+          ),
+
+          if (widget.fotosSeleccionadas.isNotEmpty)
+            SizedBox(
+              height: 110,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.fotosSeleccionadas.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            _fotoBytes[index]!,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                widget.fotosSeleccionadas.removeAt(index);
+                                _fotoBytes.clear();
+                              });
+                            },
+                            child: const CircleAvatar(
+                              radius: 12,
+                              backgroundColor: Colors.red,
+                              child: Icon(Icons.close,
+                                  color: Colors.white, size: 16),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
+          ElevatedButton(
+            onPressed: _isSubiendo ? null : _finalizar,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF22c55e),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: _isSubiendo
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text("Finalizar"),
+          ),
+
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 }

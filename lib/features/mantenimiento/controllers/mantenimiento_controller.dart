@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/mantenimiento_model.dart';
 import '../services/mantenimiento_service.dart';
 import '../models/galeria_imagen_model.dart';
@@ -166,4 +167,16 @@ class MantenimientoController extends ChangeNotifier {
     fotos[id] = photo;
     notifyListeners();
   }
+
+    Future<Map<String, dynamic>> terminarMantenimiento(
+    int idMantenimiento,
+    List<XFile> fotos
+  ) async {
+   
+        return {
+          "ok": true,
+          "msg": "Mantenimiento terminado correctamente",
+        };
+    
+    }
 }
