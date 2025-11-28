@@ -941,8 +941,33 @@ class _ClienteRegisterScreenState extends State<ClienteRegisterScreen> {
         if (e is DioException) {
           if (e.response != null) {
             final errorData = e.response?.data;
-            if (errorData is Map && errorData['detail'] != null) {
-              _errorMessage = errorData['detail'] as String;
+            
+            // Manejar errores de validación 422 de FastAPI
+            if (e.response?.statusCode == 422 && errorData is Map && errorData['detail'] != null) {
+              final detail = errorData['detail'];
+              if (detail is List) {
+                // FastAPI devuelve un array de errores de validación
+                final errores = detail.map((e) {
+                  if (e is Map) {
+                    final campo = e['loc']?.last?.toString() ?? 'campo';
+                    final mensaje = e['msg']?.toString() ?? 'Error de validación';
+                    return '$campo: $mensaje';
+                  }
+                  return e.toString();
+                }).join(', ');
+                _errorMessage = 'Error de validación: $errores';
+              } else if (detail is String) {
+                _errorMessage = detail;
+              } else {
+                _errorMessage = 'Error de validación: ${detail.toString()}';
+              }
+            } else if (errorData is Map && errorData['detail'] != null) {
+              final detail = errorData['detail'];
+              if (detail is String) {
+                _errorMessage = detail;
+              } else {
+                _errorMessage = 'Error: ${detail.toString()}';
+              }
             } else {
               _errorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
             }

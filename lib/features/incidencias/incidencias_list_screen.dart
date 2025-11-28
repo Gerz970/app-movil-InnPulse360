@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_state.dart';
 import '../../widgets/app_loading_indicator.dart';
@@ -114,244 +113,399 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
 
   /// Widget para mostrar lista de incidencias
   Widget _buildIncidenciasList(IncidenciaController controller) {
-    return ListView.builder(
-      padding: AppSpacing.allLg,
-      itemCount: controller.incidencias.length,
-      itemBuilder: (context, index) {
-        final incidencia = controller.incidencias[index];
-        return _buildIncidenciaCard(incidencia, controller);
-      },
+    return Column(
+      children: [
+        // Header con gradiente
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.05),
+                Colors.white,
+              ],
+            ),
+            border: Border(
+              bottom: BorderSide(color: Colors.grey.shade200),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.report,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Incidencias',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1a1a1a),
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Lista de incidencias
+        Expanded(
+          child: ListView.builder(
+            padding: AppSpacing.allLg,
+            itemCount: controller.incidencias.length,
+            itemBuilder: (context, index) {
+              final incidencia = controller.incidencias[index];
+              return _buildIncidenciaCard(incidencia, controller);
+            },
+          ),
+        ),
+      ],
     );
   }
 
   /// Widget para construir una card de incidencia
   Widget _buildIncidenciaCard(Incidencia incidencia, IncidenciaController controller) {
-    return AppCard(
-      onTap: () async {
-        // Navegar a la pantalla de edición de incidencia
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => IncidenciaEditScreen(
-              incidenciaId: incidencia.idIncidencia,
-            ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
-        );
-        
-        // Si se actualizó la incidencia, refrescar la lista
-        if (result == true && mounted) {
-          controller.fetchIncidencias();
-        }
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Primera fila: Ícono, información y menú
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Ícono de incidencia
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.1),
-                ),
-                child: const Icon(
-                  Icons.report,
-                  color: AppColors.primary,
-                  size: 28,
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            // Navegar a la pantalla de edición de incidencia
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => IncidenciaEditScreen(
+                  incidenciaId: incidencia.idIncidencia,
                 ),
               ),
-              SizedBox(width: AppSpacing.lg),
-              // Información de la incidencia
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            );
+            
+            // Si se actualizó la incidencia, refrescar la lista
+            if (result == true && mounted) {
+              controller.fetchIncidencias();
+            }
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.grey.shade100,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header con título y menú
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Título de la incidencia y menú
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            incidencia.incidencia,
-                            style: AppTextStyles.h3,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // Menú contextual
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.more_vert,
-                            color: AppColors.textSecondary,
-                            size: 20,
-                          ),
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => IncidenciaEditScreen(
-                                    incidenciaId: incidencia.idIncidencia,
-                                  ),
-                                ),
-                              ).then((result) {
-                                if (result == true && mounted) {
-                                  controller.fetchIncidencias();
-                                }
-                              });
-                            } else if (value == 'delete') {
-                              _showDeleteConfirmationDialog(context, incidencia, controller);
-                            } else if (value == 'detail') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => IncidenciaDetailScreen(
-                                    incidenciaId: incidencia.idIncidencia,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          itemBuilder: (BuildContext context) => [
-                            PopupMenuItem<String>(
-                              value: 'detail',
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.visibility,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: AppSpacing.sm),
-                                  const Text('Ver detalle'),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary.withOpacity(0.15),
+                                  AppColors.primary.withOpacity(0.08),
                                 ],
                               ),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            PopupMenuItem<String>(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.edit,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: AppSpacing.sm),
-                                  const Text('Editar'),
-                                ],
-                              ),
+                            child: const Icon(
+                              Icons.report,
+                              color: AppColors.primary,
+                              size: 24,
                             ),
-                            PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.delete,
-                                    color: AppColors.error,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    'Eliminar',
-                                    style: TextStyle(
-                                      color: AppColors.error,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: AppSpacing.sm),
-                    // Descripción truncada
-                    Text(
-                      incidencia.descripcion,
-                      style: AppTextStyles.bodyMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: AppSpacing.md),
-                    // Fecha y habitación/área
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: AppSpacing.xs),
-                        Text(
-                          incidencia.fechaFormateada,
-                          style: AppTextStyles.bodySmall,
-                        ),
-                        if (incidencia.habitacionArea != null) ...[
-                          SizedBox(width: AppSpacing.lg),
-                          Icon(
-                            Icons.room,
-                            size: 16,
-                            color: AppColors.textSecondary,
                           ),
-                          SizedBox(width: AppSpacing.xs),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              incidencia.habitacionArea!.nombreClave,
-                              style: AppTextStyles.bodySmall,
-                              maxLines: 1,
+                              incidencia.incidencia,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1a1a1a),
+                                letterSpacing: -0.5,
+                              ),
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                    SizedBox(height: AppSpacing.sm),
-                    // Badge de estatus
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
+                    // Menú contextual
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: AppColors.textSecondary,
+                        size: 20,
                       ),
-                      decoration: BoxDecoration(
-                        color: incidencia.idEstatus == 1
-                            ? AppColors.successLight
-                            : AppColors.errorLight,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            incidencia.idEstatus == 1
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            size: 12,
-                            color: incidencia.idEstatus == 1
-                                ? AppColors.success
-                                : AppColors.error,
-                          ),
-                          SizedBox(width: AppSpacing.xs),
-                          Text(
-                            incidencia.idEstatus == 1 ? 'Activa' : 'Inactiva',
-                            style: AppTextStyles.caption.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: incidencia.idEstatus == 1
-                                  ? AppColors.success
-                                  : AppColors.error,
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => IncidenciaEditScreen(
+                                incidenciaId: incidencia.idIncidencia,
+                              ),
                             ),
+                          ).then((result) {
+                            if (result == true && mounted) {
+                              controller.fetchIncidencias();
+                            }
+                          });
+                        } else if (value == 'delete') {
+                          _showDeleteConfirmationDialog(context, incidencia, controller);
+                        } else if (value == 'detail') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => IncidenciaDetailScreen(
+                                incidenciaId: incidencia.idIncidencia,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<String>(
+                          value: 'detail',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.visibility,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                              SizedBox(width: AppSpacing.sm),
+                              const Text('Ver detalle'),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                              SizedBox(width: AppSpacing.sm),
+                              const Text('Editar'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete,
+                                color: AppColors.error,
+                                size: 20,
+                              ),
+                              SizedBox(width: AppSpacing.sm),
+                              Text(
+                                'Eliminar',
+                                style: TextStyle(
+                                  color: AppColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                // Descripción
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade100,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    incidencia.descripcion,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF6b7280),
+                      height: 1.5,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Información adicional
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                incidencia.fechaFormateada,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (incidencia.habitacionArea != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.room,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  incidencia.habitacionArea!.nombreClave,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Badge de estatus mejorado
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: incidencia.idEstatus == 1
+                          ? [
+                              AppColors.success.withOpacity(0.15),
+                              AppColors.success.withOpacity(0.08),
+                            ]
+                          : [
+                              AppColors.error.withOpacity(0.15),
+                              AppColors.error.withOpacity(0.08),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: (incidencia.idEstatus == 1
+                              ? AppColors.success
+                              : AppColors.error)
+                          .withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        incidencia.idEstatus == 1
+                            ? Icons.check_circle
+                            : Icons.cancel,
+                        size: 16,
+                        color: incidencia.idEstatus == 1
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        incidencia.idEstatus == 1 ? 'Activa' : 'Inactiva',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: incidencia.idEstatus == 1
+                              ? AppColors.success
+                              : AppColors.error,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

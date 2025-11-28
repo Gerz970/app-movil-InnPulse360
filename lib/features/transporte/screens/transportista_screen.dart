@@ -114,7 +114,11 @@ class _TransportistaScreenState extends State<TransportistaScreen> {
             // Contenido principal
             Expanded(
               child: _isLoadingEmpleadoId
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF667eea),
+                      ),
+                    )
                   : _empleadoId == null
                       ? _buildErrorEmpleadoId()
                       : _buildServiciosList(_selectedEstatus),

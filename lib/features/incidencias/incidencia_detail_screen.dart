@@ -5,6 +5,7 @@ import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
 import 'controllers/incidencia_controller.dart';
 import 'incidencia_edit_screen.dart';
+import 'models/galeria_imagen_model.dart';
 
 /// Pantalla para mostrar el detalle completo de una incidencia
 /// Muestra todos los campos en modo solo lectura y la galería de fotos
@@ -149,55 +150,101 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Título de la pantalla
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: () => Navigator.pop(context),
-                              color: const Color(0xFF1a1a1a),
+                        // Título de la pantalla con diseño mejorado
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFF667eea).withOpacity(0.05),
+                                Colors.white,
+                              ],
                             ),
-                            const Expanded(
-                              child: Text(
-                                'Detalle de Incidencia',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1a1a1a),
-                                  letterSpacing: -0.5,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back),
+                                onPressed: () => Navigator.pop(context),
+                                color: const Color(0xFF1a1a1a),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF667eea).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.report,
+                                  color: Color(0xFF667eea),
+                                  size: 20,
                                 ),
                               ),
-                            ),
-                            // Botón Editar
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => IncidenciaEditScreen(
-                                      incidenciaId: widget.incidenciaId,
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'Detalle de Incidencia',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1a1a1a),
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ),
+                              // Botón Editar mejorado
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF667eea),
+                                      Color(0xFF5a6fd8),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF667eea).withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => IncidenciaEditScreen(
+                                          incidenciaId: widget.incidenciaId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.edit, size: 18),
+                                  label: const Text('Editar'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                );
-                              },
-                              icon: const Icon(Icons.edit, size: 18),
-                              label: const Text('Editar'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF667eea),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 32),
-                        // Información de la incidencia
+                        // Información de la incidencia con diseño mejorado
                         _buildInfoCard(
                           'Título',
                           incidencia.incidencia,
@@ -210,17 +257,25 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
                           Icons.description,
                         ),
                         const SizedBox(height: 16),
-                        _buildInfoCard(
-                          'Fecha de Incidencia',
-                          _formatDate(incidencia.fechaIncidencia),
-                          Icons.calendar_today,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildInfoCard(
-                          'Habitación/Área',
-                          incidencia.habitacionArea?.nombreClave ??
-                          'Habitación ${incidencia.habitacionAreaId}',
-                          Icons.room,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildInfoCard(
+                                'Fecha de Incidencia',
+                                _formatDate(incidencia.fechaIncidencia),
+                                Icons.calendar_today,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildInfoCard(
+                                'Habitación/Área',
+                                incidencia.habitacionArea?.nombreClave ??
+                                    'Habitación ${incidencia.habitacionAreaId}',
+                                Icons.room,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         _buildInfoCard(
@@ -246,53 +301,125 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
     );
   }
 
-  /// Widget para construir una card de información
+  /// Widget para construir una card de información mejorada
   Widget _buildInfoCard(String label, String value, IconData icon, {Color? statusColor}) {
+    final iconColor = statusColor ?? const Color(0xFF667eea);
+    final isStatus = statusColor != null;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFe5e7eb),
-          width: 1,
+          color: isStatus 
+              ? iconColor.withOpacity(0.3)
+              : Colors.grey.shade100,
+          width: isStatus ? 1.5 : 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: statusColor ?? const Color(0xFF667eea),
-            size: 24,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      iconColor.withOpacity(0.15),
+                      iconColor.withOpacity(0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF6b7280),
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: statusColor ?? const Color(0xFF1a1a1a),
-                    letterSpacing: -0.3,
+                    color: Colors.grey.shade600,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 16),
+          if (isStatus)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    iconColor.withOpacity(0.15),
+                    iconColor.withOpacity(0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: iconColor.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: iconColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1a1a1a),
+                letterSpacing: -0.3,
+                height: 1.5,
+              ),
+              maxLines: 10,
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       ),
     );
@@ -303,24 +430,45 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          children: [
-            Icon(
-              Icons.photo_library,
-              color: Color(0xFF667eea),
-              size: 24,
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF667eea).withOpacity(0.05),
+                Colors.white,
+              ],
             ),
-            SizedBox(width: 8),
-            Text(
-              'Galería de Fotos',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1a1a1a),
-                letterSpacing: -0.5,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.photo_library,
+                  color: Color(0xFF667eea),
+                  size: 24,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              const Text(
+                'Galería de Fotos',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1a1a1a),
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         // Estado de carga de galería
@@ -380,25 +528,77 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
             itemCount: controller.galeriaImagenes.length,
             itemBuilder: (context, index) {
               final imagen = controller.galeriaImagenes[index];
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: imagen.urlPublica,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF667eea),
+              return GestureDetector(
+                onTap: () {
+                  _showFullScreenImage(context, controller.galeriaImagenes, index);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 40,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: imagen.urlPublica,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF667eea),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                        // Overlay sutil al hacer hover/tap
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.1),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Icono de zoom en la esquina
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(
+                              Icons.zoom_in,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -406,6 +606,150 @@ class _IncidenciaDetailScreenState extends State<IncidenciaDetailScreen> {
             },
           ),
       ],
+    );
+  }
+
+  /// Método para mostrar imagen en pantalla completa
+  void _showFullScreenImage(BuildContext context, List<GaleriaImagen> imagenes, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _FullScreenImageViewer(
+          imagenes: imagenes,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget para visualizar imágenes en pantalla completa
+class _FullScreenImageViewer extends StatefulWidget {
+  final List<GaleriaImagen> imagenes;
+  final int initialIndex;
+
+  const _FullScreenImageViewer({
+    required this.imagenes,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black.withOpacity(0.7),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          '${_currentIndex + 1} / ${widget.imagenes.length}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          // PageView para navegar entre imágenes
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.imagenes.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final imagen = widget.imagenes[index];
+              return Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: CachedNetworkImage(
+                    imageUrl: imagen.urlPublica,
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF667eea),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 64,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Error al cargar la imagen',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Indicadores de navegación (si hay más de una imagen)
+          if (widget.imagenes.length > 1)
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  widget.imagenes.length,
+                  (index) => Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentIndex == index
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

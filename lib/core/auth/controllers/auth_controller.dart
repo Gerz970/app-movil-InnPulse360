@@ -269,8 +269,33 @@ class AuthController extends ChangeNotifier
         if (e.response != null) {
           // El servidor respondió con un código de error
           final errorData = e.response?.data;
-          if (errorData is Map && errorData['detail'] != null) {
-            _verificacionErrorMessage = errorData['detail'] as String;
+          
+          // Manejar errores de validación 422 de FastAPI
+          if (e.response?.statusCode == 422 && errorData is Map && errorData['detail'] != null) {
+            final detail = errorData['detail'];
+            if (detail is List) {
+              // FastAPI devuelve un array de errores de validación
+              final errores = detail.map((e) {
+                if (e is Map) {
+                  final campo = e['loc']?.last?.toString() ?? 'campo';
+                  final mensaje = e['msg']?.toString() ?? 'Error de validación';
+                  return '$campo: $mensaje';
+                }
+                return e.toString();
+              }).join(', ');
+              _verificacionErrorMessage = 'Error de validación: $errores';
+            } else if (detail is String) {
+              _verificacionErrorMessage = detail;
+            } else {
+              _verificacionErrorMessage = 'Error de validación: ${detail.toString()}';
+            }
+          } else if (errorData is Map && errorData['detail'] != null) {
+            final detail = errorData['detail'];
+            if (detail is String) {
+              _verificacionErrorMessage = detail;
+            } else {
+              _verificacionErrorMessage = 'Error: ${detail.toString()}';
+            }
           } else {
             _verificacionErrorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
           }
