@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'transporte_list_screen.dart';
-import 'transporte_create_screen.dart';
+import 'transporte_calificar_screen.dart';
 import '../../../widgets/app_header.dart';
 import '../../../widgets/app_sidebar.dart';
 
@@ -16,7 +16,7 @@ class _TransporteMainScreenState extends State<TransporteMainScreen> {
 
   final List<Widget> _screens = [
     const TransporteListScreen(mostrarActivos: true), // Viajes solicitados
-    const TransporteCreateScreen(), // Solicitar viaje
+    const TransporteCalificarScreen(), // Pendientes por calificar
     const TransporteListScreen(mostrarActivos: false), // Historial
   ];
 
@@ -56,8 +56,8 @@ class _TransporteMainScreenState extends State<TransporteMainScreen> {
             label: 'Solicitados',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_location_alt),
-            label: 'Solicitar',
+            icon: Icon(Icons.star_outline),
+            label: 'Calificar',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),

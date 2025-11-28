@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/transporte_controller.dart';
 import '../models/servicio_transporte_model.dart';
-import 'transporte_detail_screen.dart';
+import 'transporte_calificar_detail_screen.dart';
 
-class TransporteListScreen extends StatefulWidget {
-  final bool mostrarActivos;
-  const TransporteListScreen({super.key, this.mostrarActivos = true});
+class TransporteCalificarScreen extends StatefulWidget {
+  const TransporteCalificarScreen({super.key});
 
   @override
-  State<TransporteListScreen> createState() => _TransporteListScreenState();
+  State<TransporteCalificarScreen> createState() => _TransporteCalificarScreenState();
 }
 
-class _TransporteListScreenState extends State<TransporteListScreen> {
+class _TransporteCalificarScreenState extends State<TransporteCalificarScreen> {
   @override
   void initState() {
     super.initState();
@@ -27,7 +26,6 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Remover Scaffold - ahora el Scaffold principal está en TransporteMainScreen
     return Consumer<TransporteController>(
       builder: (context, controller, _) {
         if (controller.isLoading) {
@@ -35,39 +33,52 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
         }
 
         if (controller.error != null) {
-          return Center(child: Text('Error: ${controller.error}'));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${controller.error}',
+                    style: const TextStyle(fontSize: 16, color: Color(0xFF1a1a1a)),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => controller.fetchServicios(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF667eea),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
-        // Filtrar servicios según la pestaña
-        final serviciosFiltrados = controller.servicios.where((s) {
-          if (widget.mostrarActivos) {
-            // Activos: solo estatus 1 (Asignado)
-            return s.idEstatus == 1;
-          } else {
-            // Historial: excluir activos (1) y pendientes por calificar (3 sin calificación)
-            // Incluir: terminados con calificación (3 con calificacionViaje), cancelados (0), otros estatus
-            if (s.idEstatus == 1) return false; // Excluir activos
-            if (s.idEstatus == 3 && s.calificacionViaje == null) return false; // Excluir pendientes por calificar
-            return true; // Incluir el resto
-          }
-        }).toList();
+        // Filtrar servicios pendientes por calificar
+        final serviciosPendientes = controller.getServiciosPendientesPorCalificar();
 
-        if (serviciosFiltrados.isEmpty) {
+        if (serviciosPendientes.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  widget.mostrarActivos ? Icons.directions_car : Icons.history,
+                  Icons.star_outline,
                   size: 64,
                   color: Colors.grey.shade300,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  widget.mostrarActivos 
-                      ? 'No tienes viajes activos' 
-                      : 'No tienes historial de viajes',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  'No tienes viajes pendientes por calificar',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -76,9 +87,10 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
 
         return RefreshIndicator(
           onRefresh: () => controller.fetchServicios(),
+          color: const Color(0xFF667eea),
           child: Column(
             children: [
-              // Título de la sección (reemplaza el AppBar)
+              // Título de la sección
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
@@ -89,9 +101,11 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      widget.mostrarActivos ? 'Viajes Solicitados' : 'Historial de Viajes',
-                      style: const TextStyle(
+                    Icon(Icons.star_outline, color: Colors.amber[700], size: 24),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Pendientes por Calificar',
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF1a1a1a),
@@ -104,9 +118,9 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: serviciosFiltrados.length,
+                  itemCount: serviciosPendientes.length,
                   itemBuilder: (context, index) {
-                    final servicio = serviciosFiltrados[index];
+                    final servicio = serviciosPendientes[index];
                     return _buildServicioCard(servicio);
                   },
                 ),
@@ -128,9 +142,13 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TransporteDetailScreen(servicio: servicio),
+              builder: (context) => TransporteCalificarDetailScreen(servicio: servicio),
             ),
-          );
+          ).then((_) {
+            // Recargar servicios al volver para actualizar la lista
+            final controller = Provider.of<TransporteController>(context, listen: false);
+            controller.fetchServicios();
+          });
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -148,16 +166,24 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: servicio.idEstatus == 1 ? Colors.blue.shade50 : Colors.grey.shade100,
+                      color: Colors.amber.shade50,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade300),
                     ),
-                    child: Text(
-                      servicio.idEstatus == 1 ? 'Activo' : 'Finalizado',
-                      style: TextStyle(
-                        color: servicio.idEstatus == 1 ? Colors.blue.shade700 : Colors.grey.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star_outline, size: 14, color: Colors.amber[700]),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Pendiente',
+                          style: TextStyle(
+                            color: Colors.amber[700],
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -180,6 +206,23 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
                   ),
                 ],
               ),
+              if (servicio.direccionOrigen != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.my_location, color: Colors.green, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        servicio.direccionOrigen!,
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               if (servicio.distanciaKm != null) ...[
                 const SizedBox(height: 8),
                 Row(
@@ -187,7 +230,7 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
                     Icon(Icons.directions_car, color: Colors.grey.shade500, size: 16),
                     const SizedBox(width: 8),
                     Text(
-                      '${servicio.distanciaKm} km',
+                      '${servicio.distanciaKm!.toStringAsFixed(1)} km',
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
@@ -195,7 +238,7 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
               ],
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     '\$${servicio.costoViaje.toStringAsFixed(2)}',
@@ -203,6 +246,28 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: Color(0xFF667eea),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF667eea),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          'Calificar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -214,3 +279,4 @@ class _TransporteListScreenState extends State<TransporteListScreen> {
     );
   }
 }
+

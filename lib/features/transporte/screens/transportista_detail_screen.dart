@@ -29,8 +29,8 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
     switch (status) {
       case 1: return Colors.orange;
       case 2: return Colors.blue;
-      case 3: return Colors.green;
-      case 4: return Colors.grey;
+      case 4: return Colors.green;
+      case 3: return Colors.grey;
       case 0: return Colors.red;
       default: return Colors.grey;
     }
@@ -40,8 +40,8 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
     switch (status) {
       case 1: return "Pendiente";
       case 2: return "Aceptado";
-      case 3: return "En curso";
-      case 4: return "Terminado";
+      case 4: return "En curso";
+      case 3: return "Terminado";
       case 0: return "Cancelado";
       default: return "Desconocido";
     }
@@ -51,18 +51,18 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
     _comentarioController.clear();
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Text('$accion Viaje'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Es obligatorio registrar un comentario para continuar.'),
+            Text('Puedes agregar un comentario opcional sobre el viaje.'),
             const SizedBox(height: 16),
             TextField(
               controller: _comentarioController,
               decoration: const InputDecoration(
-                labelText: 'Comentario',
+                labelText: 'Comentario (opcional)',
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -76,12 +76,6 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (_comentarioController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('El comentario es obligatorio')),
-                );
-                return;
-              }
               Navigator.pop(context);
               onConfirm(_comentarioController.text.trim());
             },
@@ -102,19 +96,16 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Viaje iniciado correctamente')),
           );
-          // Actualizar modelo localmente o recargar
-          setState(() {
-             // Como el modelo es final, deberíamos recargar o clonar. 
-             // Por simplicidad, cerraremos la pantalla o indicaremos que se actualice.
-             // Lo ideal es que el controller refresque la lista, pero aquí solo tenemos el objeto.
-             // Forzamos un "back" para que la lista se recargue y el usuario vuelva a entrar si quiere ver cambios,
-             // o actualizamos visualmente si es crítico.
-             // El controller devuelve bool.
-             Navigator.pop(context); 
-          });
+          // Recargar el detalle del servicio para reflejar el cambio
+          final servicioActualizado = await controller.obtenerDetalleServicio(_servicio.idServicioTransporte!);
+          if (servicioActualizado != null && mounted) {
+            setState(() {
+              _servicio = servicioActualizado;
+            });
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${controller.error}')),
+            SnackBar(content: Text('Error: ${controller.error ?? "Error desconocido"}')),
           );
         }
       }
@@ -131,10 +122,16 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Viaje terminado correctamente')),
           );
-          Navigator.pop(context);
+          // Recargar el detalle del servicio para reflejar el cambio
+          final servicioActualizado = await controller.obtenerDetalleServicio(_servicio.idServicioTransporte!);
+          if (servicioActualizado != null && mounted) {
+            setState(() {
+              _servicio = servicioActualizado;
+            });
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${controller.error}')),
+            SnackBar(content: Text('Error: ${controller.error ?? "Error desconocido"}')),
           );
         }
       }
@@ -271,7 +268,7 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
                         ),
                       ),
                       
-                    if (_servicio.idEstatus == 3)
+                    if (_servicio.idEstatus == 4)
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -306,7 +303,13 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),

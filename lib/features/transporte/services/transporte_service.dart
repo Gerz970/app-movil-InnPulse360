@@ -127,10 +127,14 @@ class TransporteService {
     final url = baseUrl + EndpointsTransporte.detail(idServicio);
     final headers = {'Authorization': 'Bearer $token'};
 
-    final data = {
-      'id_estatus': 3, // En Curso
-      'observaciones_empleado': comentario,
+    final data = <String, dynamic>{
+      'id_estatus': 4, // En Curso
     };
+    
+    // Solo agregar comentario si no está vacío
+    if (comentario.isNotEmpty) {
+      data['observaciones_empleado'] = comentario;
+    }
 
     try {
       final response = await _dio.put(
@@ -151,10 +155,42 @@ class TransporteService {
     final url = baseUrl + EndpointsTransporte.detail(idServicio);
     final headers = {'Authorization': 'Bearer $token'};
 
-    final data = {
-      'id_estatus': 4, // Terminado
-      'observaciones_empleado': comentario,
+    final data = <String, dynamic>{
+      'id_estatus': 3, // Terminado
     };
+    
+    // Solo agregar comentario si no está vacío
+    if (comentario.isNotEmpty) {
+      data['observaciones_empleado'] = comentario;
+    }
+
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Response> calificarViaje(int idServicio, int calificacion, String? comentario) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No hay token de autenticación disponible');
+
+    final url = baseUrl + EndpointsTransporte.detail(idServicio);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    final data = <String, dynamic>{
+      'calificacion_viaje': calificacion,
+    };
+    
+    // Solo agregar comentario si no está vacío
+    if (comentario != null && comentario.isNotEmpty) {
+      data['observaciones_cliente'] = comentario;
+    }
 
     try {
       final response = await _dio.put(

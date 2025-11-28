@@ -17,14 +17,14 @@ class TransportistaScreen extends StatefulWidget {
 class _TransportistaScreenState extends State<TransportistaScreen> {
   int? _empleadoId;
   bool _isLoadingEmpleadoId = true;
-  int? _selectedEstatus; // null = Todas, 1 = Asignados, 3 = En Curso, 4 = Terminados
+  int? _selectedEstatus; // null = Todas, 1 = Asignados, 4 = En Curso, 3 = Terminados
 
   // Opciones de estatus de transporte
   final List<Map<String, dynamic>> _estatusOptions = [
     {'id': null, 'nombre': 'Todas', 'color': Colors.grey},
     {'id': 1, 'nombre': 'Asignados', 'color': Colors.orange},
-    {'id': 3, 'nombre': 'En Curso', 'color': Colors.green},
-    {'id': 4, 'nombre': 'Terminados', 'color': Colors.grey},
+    {'id': 4, 'nombre': 'En Curso', 'color': Colors.green},
+    {'id': 3, 'nombre': 'Terminados', 'color': Colors.grey},
   ];
 
   @override
@@ -305,11 +305,11 @@ class _TransportistaScreenState extends State<TransportistaScreen> {
         mensaje = 'No tienes servicios asignados';
         icono = Icons.pending_outlined;
         break;
-      case 3:
+      case 4:
         mensaje = 'No tienes servicios en curso';
         icono = Icons.directions_car_outlined;
         break;
-      case 4:
+      case 3:
         mensaje = 'No tienes servicios terminados';
         icono = Icons.check_circle_outline;
         break;
@@ -585,9 +585,9 @@ class _TransportistaScreenState extends State<TransportistaScreen> {
         return Colors.orange;
       case 2: // Aceptado
         return Colors.blue;
-      case 3: // En curso
+      case 4: // En curso
         return Colors.green;
-      case 4: // Terminado
+      case 3: // Terminado
         return Colors.grey;
       case 0: // Cancelado
         return Colors.red;
@@ -602,9 +602,9 @@ class _TransportistaScreenState extends State<TransportistaScreen> {
         return "Asignado";
       case 2:
         return "Aceptado";
-      case 3:
-        return "En Curso";
       case 4:
+        return "En Curso";
+      case 3:
         return "Terminado";
       case 0:
         return "Cancelado";

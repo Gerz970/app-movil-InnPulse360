@@ -160,5 +160,53 @@ class TransporteController extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<ServicioTransporteModel?> obtenerDetalleServicio(int idServicio) async {
+    try {
+      final response = await _service.getServicioDetail(idServicio);
+      if (response.statusCode == 200 && response.data != null) {
+        return ServicioTransporteModel.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      _error = e.toString();
+      print('Error obtener detalle servicio: $e');
+      return null;
+    }
+  }
+
+  List<ServicioTransporteModel> getServiciosPendientesPorCalificar() {
+    return _servicios.where((servicio) => 
+      servicio.idEstatus == 3 && // Terminado
+      servicio.calificacionViaje == null
+    ).toList();
+  }
+
+  Future<bool> calificarViaje(int idServicio, int calificacion, String? comentario) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _service.calificarViaje(idServicio, calificacion, comentario);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Recargar servicios para reflejar el cambio
+        await fetchServicios();
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      _isLoading = false;
+      _error = 'Error al calificar viaje';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      print('Error calificar viaje: $e');
+      notifyListeners();
+      return false;
+    }
+  }
 }
 
