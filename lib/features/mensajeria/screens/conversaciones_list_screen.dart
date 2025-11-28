@@ -5,6 +5,14 @@ import '../models/conversacion_model.dart';
 import 'chat_conversacion_screen.dart';
 import 'buscar_usuario_screen.dart';
 import '../../../widgets/app_sidebar.dart';
+import '../../../widgets/app_header.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../widgets/app_empty_state.dart';
+import '../../../widgets/app_error_state.dart';
+import '../../../widgets/app_loading_indicator.dart';
+import '../../../widgets/app_card.dart';
+import '../../../widgets/app_button.dart';
+import '../widgets/mensajeria_bottom_nav_bar.dart';
 
 class ConversacionesListScreen extends StatefulWidget {
   const ConversacionesListScreen({super.key});
@@ -29,112 +37,83 @@ class _ConversacionesListScreenState extends State<ConversacionesListScreen> {
     });
   }
 
+  void _navigateToBuscarUsuario() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const BuscarUsuarioScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppSidebar(),
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Mensajería'),
-        backgroundColor: const Color(0xFF667eea),
-        foregroundColor: Colors.white,
-      ),
-      body: Consumer<MensajeriaController>(
-        builder: (context, controller, child) {
-          if (controller.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF667eea),
-              ),
-            );
-          }
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header global reutilizable
+            const AppHeader(),
+            // Contenido principal
+            Expanded(
+              child: Consumer<MensajeriaController>(
+                builder: (context, controller, child) {
+                  if (controller.isLoading) {
+                    return const AppLoadingIndicator();
+                  }
 
-          if (controller.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    controller.errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => controller.fetchConversaciones(),
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
-          }
+                  if (controller.errorMessage != null) {
+                    return AppErrorState(
+                      message: controller.errorMessage!,
+                      onRetry: () => controller.fetchConversaciones(),
+                    );
+                  }
 
-          if (controller.conversaciones.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.chat_bubble_outline,
-                    size: 64,
-                    color: Color(0xFF6b7280),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No tienes conversaciones',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF6b7280),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BuscarUsuarioScreen(),
-                        ),
-                      );
+                  if (controller.conversaciones.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AppEmptyState(
+                            icon: Icons.chat_bubble_outline,
+                            title: 'No tienes conversaciones',
+                            message: 'Inicia una nueva conversación con otro usuario',
+                          ),
+                          SizedBox(height: AppSpacing.xxl),
+                          AppButton(
+                            text: 'Nueva conversación',
+                            onPressed: _navigateToBuscarUsuario,
+                            width: null,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      await controller.fetchConversaciones(refresh: true);
+                      await controller.actualizarContadorNoLeidos();
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nueva conversación'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF667eea),
-                      foregroundColor: Colors.white,
+                    child: ListView.builder(
+                      padding: AppSpacing.allSm,
+                      itemCount: controller.conversaciones.length,
+                      itemBuilder: (context, index) {
+                        final conversacion = controller.conversaciones[index];
+                        return _buildConversacionCard(context, conversacion, controller);
+                      },
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              await controller.fetchConversaciones(refresh: true);
-              await controller.actualizarContadorNoLeidos();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: controller.conversaciones.length,
-              itemBuilder: (context, index) {
-                final conversacion = controller.conversaciones[index];
-                return _buildConversacionCard(context, conversacion, controller);
-              },
             ),
-          );
-        },
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const BuscarUsuarioScreen(),
-            ),
-          );
-        },
-        backgroundColor: const Color(0xFF667eea),
-        child: const Icon(Icons.add, color: Colors.white),
+      bottomNavigationBar: MensajeriaBottomNavBar(
+        onNewConversationTap: _navigateToBuscarUsuario,
       ),
     );
   }
@@ -148,89 +127,124 @@ class _ConversacionesListScreenState extends State<ConversacionesListScreen> {
     final preview = ultimoMensaje?.contenido ?? 'Sin mensajes';
     final fecha = conversacion.fechaUltimoMensaje ?? conversacion.fechaCreacion;
     final timeAgo = _formatTimeAgo(fecha);
+    final tieneNoLeidos = conversacion.contadorNoLeidos > 0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFF667eea).withOpacity(0.1),
-          child: conversacion.otroUsuarioFoto != null
-              ? ClipOval(
-                  child: Image.network(
-                    conversacion.otroUsuarioFoto!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.person,
-                        color: Color(0xFF667eea),
-                      );
-                    },
-                  ),
-                )
-              : const Icon(
-                  Icons.person,
-                  color: Color(0xFF667eea),
-                ),
-        ),
-        title: Text(
-          conversacion.otroUsuarioNombre ?? 'Usuario',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              preview,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6b7280),
-              ),
+    return AppCard(
+      margin: EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatConversacionScreen(
+              conversacionId: conversacion.idConversacion,
             ),
-            const SizedBox(height: 4),
-            Text(
-              timeAgo,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF9ca3af),
+          ),
+        );
+      },
+      child: Row(
+        children: [
+          // Avatar
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            child: conversacion.otroUsuarioFoto != null
+                ? ClipOval(
+                    child: Image.network(
+                      conversacion.otroUsuarioFoto!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.person,
+                          color: AppColors.primary,
+                          size: 28,
+                        );
+                      },
+                    ),
+                  )
+                : Icon(
+                    Icons.person,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
+          ),
+          SizedBox(width: AppSpacing.md),
+          // Contenido
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        conversacion.otroUsuarioNombre ?? 'Usuario',
+                        style: AppTextStyles.h3.copyWith(
+                          fontWeight: tieneNoLeidos
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.xs),
+                    Text(
+                      timeAgo,
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: tieneNoLeidos
+                              ? FontWeight.w500
+                              : FontWeight.w400,
+                          color: tieneNoLeidos
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Badge de no leídos
+          if (tieneNoLeidos) ...[
+            SizedBox(width: AppSpacing.sm),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: conversacion.contadorNoLeidos > 9 ? 8 : 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: AppRadius.xlBorder,
+              ),
+              child: Text(
+                conversacion.contadorNoLeidos > 9
+                    ? '9+'
+                    : conversacion.contadorNoLeidos.toString(),
+                style: AppTextStyles.caption.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],
-        ),
-        trailing: conversacion.contadorNoLeidos > 0
-            ? Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF667eea),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  conversacion.contadorNoLeidos > 9
-                      ? '9+'
-                      : conversacion.contadorNoLeidos.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              )
-            : null,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatConversacionScreen(
-                conversacionId: conversacion.idConversacion,
-              ),
-            ),
-          );
-        },
+        ],
       ),
     );
   }

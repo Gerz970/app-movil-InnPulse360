@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
+import '../core/theme/app_theme.dart';
 import '../features/perfil/screens/perfil_screen.dart';
 import '../features/login/login_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
@@ -61,9 +62,12 @@ class AppHeader extends StatelessWidget {
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.background,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -80,13 +84,13 @@ class AppHeader extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.menu,
-                    color: Color(0xFF667eea),
+                    color: AppColors.primary,
                     size: 22,
                   ),
                   onPressed: () {
@@ -95,10 +99,10 @@ class AppHeader extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: AppSpacing.md),
               // Foto de perfil circular - construida directamente desde loginResponse
               _buildAvatarFromSession(loginResponse),
-              const SizedBox(width: 12),
+              SizedBox(width: AppSpacing.md),
               // Nombre del usuario y texto secundario
               Expanded(
                 child: Column(
@@ -107,42 +111,34 @@ class AppHeader extends StatelessWidget {
                   children: [
                     Text(
                       userLogin,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1a1a1a),
-                        letterSpacing: -0.3,
-                      ),
+                      style: AppTextStyles.h3,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       'Bienvenido de nuevo',
-                      style: TextStyle(
+                      style: AppTextStyles.bodySmall.copyWith(
                         fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF6b7280),
-                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppSpacing.sm),
               // Botón circular Asistente IA
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.smart_toy,
-                    color: Color(0xFF667eea),
+                    color: AppColors.primary,
                     size: 22,
                   ),
                   onPressed: () {
@@ -155,66 +151,66 @@ class AppHeader extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppSpacing.sm),
               // Botón circular menú "⋮"
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                 ),
                 child: PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.more_vert,
-                    color: Color(0xFF667eea),
+                    color: AppColors.primary,
                     size: 22,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.mdBorder,
                   ),
                   itemBuilder: (BuildContext context) => [
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'perfil',
                       child: Row(
                         children: [
-                          Icon(Icons.person_outline, size: 20, color: Color(0xFF6b7280)),
-                          SizedBox(width: 12),
+                          Icon(Icons.person_outline, size: 20, color: AppColors.textSecondary),
+                          SizedBox(width: AppSpacing.md),
                           Text('Perfil'),
                         ],
                       ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'configuracion',
                       child: Row(
                         children: [
-                          Icon(Icons.settings_outlined, size: 20, color: Color(0xFF6b7280)),
-                          SizedBox(width: 12),
+                          Icon(Icons.settings_outlined, size: 20, color: AppColors.textSecondary),
+                          SizedBox(width: AppSpacing.md),
                           Text('Configuración'),
                         ],
                       ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'ayuda',
                       child: Row(
                         children: [
-                          Icon(Icons.help_outline, size: 20, color: Color(0xFF6b7280)),
-                          SizedBox(width: 12),
+                          Icon(Icons.help_outline, size: 20, color: AppColors.textSecondary),
+                          SizedBox(width: AppSpacing.md),
                           Text('Ayuda'),
                         ],
                       ),
                     ),
                     const PopupMenuDivider(),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'cerrar_sesion',
                       child: Row(
                         children: [
-                          Icon(Icons.logout, size: 20, color: Colors.red),
-                          SizedBox(width: 12),
+                          Icon(Icons.logout, size: 20, color: AppColors.error),
+                          SizedBox(width: AppSpacing.md),
                           Text(
                             'Cerrar sesión',
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(color: AppColors.error),
                           ),
                         ],
                       ),
@@ -230,16 +226,16 @@ class AppHeader extends StatelessWidget {
                       );
                     } else if (value == 'configuracion') {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Configuración en desarrollo'),
-                          backgroundColor: Color(0xFF667eea),
+                        SnackBar(
+                          content: const Text('Configuración en desarrollo'),
+                          backgroundColor: AppColors.primary,
                         ),
                       );
                     } else if (value == 'ayuda') {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ayuda en desarrollo'),
-                          backgroundColor: Color(0xFF667eea),
+                        SnackBar(
+                          content: const Text('Ayuda en desarrollo'),
+                          backgroundColor: AppColors.primary,
                         ),
                       );
                     } else if (value == 'cerrar_sesion') {
@@ -295,7 +291,7 @@ class AppHeader extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: const Color(0xFF667eea).withOpacity(0.3),
+          color: AppColors.primary.withOpacity(0.3),
           width: 2,
         ),
       ),
@@ -310,10 +306,10 @@ class AppHeader extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) {
                   print('DEBUG Header: Error al cargar imagen: $error');
                   return Container(
-                    color: const Color(0xFF667eea).withOpacity(0.1),
-                    child: const Icon(
+                    color: AppColors.primary.withOpacity(0.1),
+                    child: Icon(
                       Icons.person,
-                      color: Color(0xFF667eea),
+                      color: AppColors.primary,
                       size: 28,
                     ),
                   );
@@ -321,21 +317,21 @@ class AppHeader extends StatelessWidget {
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    color: const Color(0xFF667eea).withOpacity(0.1),
-                    child: const Center(
+                    color: AppColors.primary.withOpacity(0.1),
+                    child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                       ),
                     ),
                   );
                 },
               )
             : Container(
-                color: const Color(0xFF667eea).withOpacity(0.1),
-                child: const Icon(
+                color: AppColors.primary.withOpacity(0.1),
+                child: Icon(
                   Icons.person,
-                  color: Color(0xFF667eea),
+                  color: AppColors.primary,
                   size: 28,
                 ),
               ),

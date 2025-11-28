@@ -147,11 +147,34 @@ class MensajeriaController with ChangeNotifier {
     try {
       _isLoading = true;
       _errorMessage = null;
+      _usuariosDisponibles = [];
       notifyListeners();
 
       _usuariosDisponibles = await _service.buscarUsuarios(query: query);
+      
+      // Si la lista está vacía pero no hay error, es un caso válido (sin resultados)
+      if (_usuariosDisponibles.isEmpty && _errorMessage == null) {
+        print('🔵 MensajeriaController: No se encontraron usuarios (caso válido)');
+      }
     } catch (e) {
-      _errorMessage = "Error al buscar usuarios: $e";
+      // Extraer mensaje de error más descriptivo
+      String errorMsg;
+      if (e is Exception) {
+        final errorString = e.toString();
+        // Remover prefijo "Exception: " si existe
+        if (errorString.startsWith('Exception: ')) {
+          errorMsg = errorString.substring(11);
+        } else {
+          errorMsg = errorString;
+        }
+      } else {
+        errorMsg = e.toString();
+      }
+      
+      _errorMessage = errorMsg;
+      _usuariosDisponibles = [];
+      
+      print('❌ MensajeriaController: Error al buscar usuarios: $errorMsg');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -173,10 +196,10 @@ class MensajeriaController with ChangeNotifier {
         adminId: adminId,
       );
 
-      // Agregar a la lista si no existe
-      if (!_conversaciones.any((c) => c.idConversacion == conversacion.idConversacion)) {
-        _conversaciones.insert(0, conversacion);
-      }
+      // NO agregar a la lista local - la conversación solo aparecerá después de enviar el primer mensaje
+      // Esto evita mostrar conversaciones vacías en la lista de chats
+      // La conversación se agregará automáticamente cuando se refresque desde el servidor
+      // después de que se envíe el primer mensaje
 
       return conversacion;
     } catch (e) {
@@ -203,10 +226,10 @@ class MensajeriaController with ChangeNotifier {
         empleado2Id: empleado2Id,
       );
 
-      // Agregar a la lista si no existe
-      if (!_conversaciones.any((c) => c.idConversacion == conversacion.idConversacion)) {
-        _conversaciones.insert(0, conversacion);
-      }
+      // NO agregar a la lista local - la conversación solo aparecerá después de enviar el primer mensaje
+      // Esto evita mostrar conversaciones vacías en la lista de chats
+      // La conversación se agregará automáticamente cuando se refresque desde el servidor
+      // después de que se envíe el primer mensaje
 
       return conversacion;
     } catch (e) {

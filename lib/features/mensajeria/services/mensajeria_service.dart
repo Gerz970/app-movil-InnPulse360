@@ -276,37 +276,84 @@ class MensajeriaService {
       print('🔵 MensajeriaService: Respuesta recibida - Status: ${response.statusCode}');
       print('🔵 MensajeriaService: Tipo de datos: ${response.data.runtimeType}');
 
-      if (response.data is List) {
-        final lista = (response.data as List)
-            .map((json) {
-              try {
-                return UsuarioChatModel.fromJson(json);
-              } catch (e) {
-                print('❌ Error parseando usuario: $e');
-                print('❌ JSON: $json');
-                rethrow;
-              }
-            })
-            .toList();
-        print('🔵 MensajeriaService: Usuarios parseados: ${lista.length}');
-        return lista;
+      // Validar que la respuesta sea una lista
+      if (response.data is! List) {
+        print('⚠️ MensajeriaService: Respuesta no es una lista, tipo recibido: ${response.data.runtimeType}');
+        // Si la respuesta es un mapa con un mensaje de error, extraerlo
+        if (response.data is Map<String, dynamic>) {
+          final errorData = response.data as Map<String, dynamic>;
+          final errorMessage = errorData['detail'] ?? errorData['message'] ?? 'Formato de respuesta inválido';
+          throw Exception('Error del servidor: $errorMessage');
+        }
+        return [];
       }
-      print('⚠️ MensajeriaService: Respuesta no es una lista, retornando lista vacía');
-      return [];
+
+      // Parsear la lista de usuarios
+      final lista = (response.data as List)
+          .map((json) {
+            try {
+              return UsuarioChatModel.fromJson(json);
+            } catch (e) {
+              print('❌ Error parseando usuario: $e');
+              print('❌ JSON: $json');
+              throw Exception('Error al procesar datos del usuario: $e');
+            }
+          })
+          .toList();
+      
+      print('🔵 MensajeriaService: Usuarios parseados: ${lista.length}');
+      return lista;
     } on DioException catch (e) {
       print('❌ Error DioException al buscar usuarios:');
       print('❌ Tipo: ${e.type}');
       print('❌ Mensaje: ${e.message}');
       print('❌ URL intentada: ${e.requestOptions.uri}');
-      if (e.response != null) {
-        print('❌ Status Code: ${e.response?.statusCode}');
-        print('❌ Response Data: ${e.response?.data}');
+      
+      // Distinguir entre diferentes tipos de errores
+      String errorMessage;
+      
+      if (e.type == DioExceptionType.connectionError || 
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet y que el servidor esté disponible.';
+      } else if (e.type == DioExceptionType.badResponse && e.response != null) {
+        final statusCode = e.response?.statusCode;
+        final errorData = e.response?.data;
+        
+        if (statusCode == 401) {
+          errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+        } else if (statusCode == 403) {
+          errorMessage = 'No tienes permiso para realizar esta acción.';
+        } else if (statusCode == 404) {
+          errorMessage = 'Recurso no encontrado.';
+        } else if (statusCode != null && statusCode >= 500) {
+          errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+        } else {
+          // Extraer mensaje de error del servidor si está disponible
+          if (errorData is Map<String, dynamic>) {
+            final detail = errorData['detail'] ?? errorData['message'];
+            errorMessage = detail?.toString() ?? 'Error al buscar usuarios (${statusCode})';
+          } else {
+            errorMessage = 'Error al buscar usuarios (${statusCode})';
+          }
+        }
+        
+        print('❌ Status Code: $statusCode');
+        print('❌ Response Data: $errorData');
+      } else {
+        errorMessage = 'Error al buscar usuarios: ${e.message ?? "Error desconocido"}';
       }
-      rethrow;
+      
+      throw Exception(errorMessage);
     } catch (e) {
+      // Si ya es una Exception con mensaje descriptivo, re-lanzarla
+      if (e is Exception && e.toString().contains('Error')) {
+        rethrow;
+      }
+      
       print('❌ Error inesperado al buscar usuarios: $e');
       print('❌ Tipo: ${e.runtimeType}');
-      rethrow;
+      throw Exception('Error inesperado al buscar usuarios: $e');
     }
   }
 

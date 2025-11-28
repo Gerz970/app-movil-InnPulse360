@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../core/theme/app_theme.dart';
 import '../common/under_construction_screen.dart';
 import 'limpieza_administracion_screen.dart';
 import 'limpieza_crear_screen.dart';
@@ -13,7 +14,7 @@ class LimpiezaDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: AppColors.background,
       drawer: const AppSidebar(),
       body: SafeArea(
         child: Column(
@@ -23,31 +24,24 @@ class LimpiezaDashboardScreen extends StatelessWidget {
             // Contenido principal
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.allLg,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Título del módulo
-                    const Text(
+                    Text(
                       'Administración de Limpieza',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1a1a1a),
-                        letterSpacing: -0.5,
-                      ),
+                      style: AppTextStyles.h1,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: AppSpacing.sm),
                     // Subtítulo descriptivo
-                    const Text(
+                    Text(
                       'Gestiona asignaciones, estadísticas e histórico de limpieza',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF6b7280),
-                        letterSpacing: -0.2,
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: AppSpacing.xxxl),
 
                     // Grid de opciones (2 columnas en pantallas grandes, 1 en pequeñas)
                     LayoutBuilder(
@@ -64,7 +58,7 @@ class LimpiezaDashboardScreen extends StatelessWidget {
                               title: 'Estadística Limpieza',
                               description: 'Métricas y reportes de rendimiento',
                               icon: Icons.bar_chart,
-                              color: Color(0xFF667eea),
+                              color: AppColors.primary,
                               isAvailable: false,
                               onTap: _navigateToEstadistica,
                             ),
@@ -72,7 +66,7 @@ class LimpiezaDashboardScreen extends StatelessWidget {
                               title: 'Asignaciones',
                               description: 'Gestionar tareas de limpieza por estatus',
                               icon: Icons.assignment,
-                              color: Color(0xFF4CAF50),
+                              color: AppColors.success,
                               isAvailable: true,
                               onTap: _navigateToAsignaciones,
                             ),
@@ -80,7 +74,7 @@ class LimpiezaDashboardScreen extends StatelessWidget {
                               title: 'Crear Limpieza',
                               description: 'Programar nueva tarea de limpieza',
                               icon: Icons.add_circle,
-                              color: Color(0xFF2196F3),
+                              color: AppColors.info,
                               isAvailable: true,
                               onTap: _navigateToCrearLimpieza,
                             ),
@@ -88,7 +82,7 @@ class LimpiezaDashboardScreen extends StatelessWidget {
                               title: 'Histórico',
                               description: 'Registro histórico de actividades',
                               icon: Icons.history,
-                              color: Color(0xFFFF9800),
+                              color: AppColors.warning,
                               isAvailable: false,
                               onTap: _navigateToHistorico,
                             ),
@@ -174,15 +168,15 @@ class _DashboardCard extends StatelessWidget {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.lgBorder,
       ),
       child: InkWell(
         onTap: isAvailable ? () => onTap(context) : null,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.lgBorder,
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.allXxl,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.lgBorder,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -209,38 +203,37 @@ class _DashboardCard extends StatelessWidget {
                   color: color.withOpacity(isAvailable ? 1.0 : 0.6),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               // Título
               Text(
                 title,
-                style: TextStyle(
+                style: AppTextStyles.h3.copyWith(
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1a1a1a).withOpacity(isAvailable ? 1.0 : 0.7),
-                  letterSpacing: -0.3,
+                  color: AppColors.textPrimary.withOpacity(isAvailable ? 1.0 : 0.7),
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
 
               // Descripción
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: const Color(0xFF6b7280).withOpacity(isAvailable ? 0.9 : 0.6),
-                  letterSpacing: -0.2,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary.withOpacity(isAvailable ? 0.9 : 0.6),
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               // Badge de estado
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isAvailable
                       ? color.withOpacity(0.1)
@@ -255,11 +248,9 @@ class _DashboardCard extends StatelessWidget {
                 ),
                 child: Text(
                   isAvailable ? 'Disponible' : 'Próximamente',
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: AppTextStyles.caption.copyWith(
                     fontWeight: FontWeight.w500,
                     color: isAvailable ? color : Colors.grey.shade600,
-                    letterSpacing: -0.1,
                   ),
                 ),
               ),

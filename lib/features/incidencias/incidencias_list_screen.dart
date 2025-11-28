@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/app_empty_state.dart';
+import '../../widgets/app_error_state.dart';
+import '../../widgets/app_loading_indicator.dart';
+import '../../core/theme/app_theme.dart';
 import 'controllers/incidencia_controller.dart';
 import 'models/incidencia_model.dart';
 import 'incidencia_create_screen.dart';
@@ -34,7 +39,7 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: AppColors.background,
       drawer: const AppSidebar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -50,7 +55,7 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
             controller.fetchIncidencias();
           });
         },
-        backgroundColor: const Color(0xFF667eea),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
@@ -65,21 +70,34 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
                 builder: (context, controller, child) {
                   // Estado de carga
                   if (controller.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF667eea),
-                      ),
-                    );
+                    return const AppLoadingIndicator();
                   }
 
                   // Estado de error
                   if (controller.errorMessage != null) {
-                    return _buildErrorState(context, controller);
+                    return AppErrorState(
+                      message: controller.errorMessage ?? 'Error desconocido',
+                      onRetry: () => controller.fetchIncidencias(),
+                      showReauthenticate: controller.isNotAuthenticated,
+                      onReauthenticate: controller.isNotAuthenticated
+                          ? () {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            }
+                          : null,
+                    );
                   }
 
                   // Estado vacío
                   if (controller.isEmpty) {
-                    return _buildEmptyState();
+                    return const AppEmptyState(
+                      icon: Icons.report_outlined,
+                      title: 'Aún no hay incidencias',
+                    );
                   }
 
                   // Estado exitoso - Lista de incidencias
@@ -93,117 +111,11 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
     );
   }
 
-  /// Widget para mostrar estado de error
-  Widget _buildErrorState(BuildContext context, IncidenciaController controller) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              controller.errorMessage ?? 'Error desconocido',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1a1a1a),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    controller.fetchIncidencias();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF667eea),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Reintentar'),
-                ),
-                if (controller.isNotAuthenticated) ...[
-                  const SizedBox(width: 12),
-                  OutlinedButton(
-                    onPressed: () {
-                      // Navegar a LoginScreen
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                        (route) => false,
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF667eea),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      side: const BorderSide(
-                        color: Color(0xFF667eea),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Text('Reautenticar'),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Widget para mostrar estado vacío
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.report_outlined,
-            size: 80,
-            color: const Color(0xFF667eea).withOpacity(0.3),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Aún no hay incidencias',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6b7280),
-              letterSpacing: -0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Widget para mostrar lista de incidencias
   Widget _buildIncidenciasList(IncidenciaController controller) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.allLg,
       itemCount: controller.incidencias.length,
       itemBuilder: (context, index) {
         final incidencia = controller.incidencias[index];
@@ -214,257 +126,232 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
 
   /// Widget para construir una card de incidencia
   Widget _buildIncidenciaCard(Incidencia incidencia, IncidenciaController controller) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: () async {
-          // Navegar a la pantalla de edición de incidencia
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => IncidenciaEditScreen(
-                incidenciaId: incidencia.idIncidencia,
-              ),
+    return AppCard(
+      onTap: () async {
+        // Navegar a la pantalla de edición de incidencia
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => IncidenciaEditScreen(
+              incidenciaId: incidencia.idIncidencia,
             ),
-          );
-          
-          // Si se actualizó la incidencia, refrescar la lista
-          if (result == true && mounted) {
-            controller.fetchIncidencias();
-          }
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+          ),
+        );
+        
+        // Si se actualizó la incidencia, refrescar la lista
+        if (result == true && mounted) {
+          controller.fetchIncidencias();
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Primera fila: Ícono, información y menú
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Primera fila: Ícono, información y menú
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Ícono de incidencia
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF667eea).withOpacity(0.1),
-                    ),
-                    child: const Icon(
-                      Icons.report,
-                      color: Color(0xFF667eea),
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Información de la incidencia
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              // Ícono de incidencia
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.1),
+                ),
+                child: const Icon(
+                  Icons.report,
+                  color: AppColors.primary,
+                  size: 28,
+                ),
+              ),
+              SizedBox(width: AppSpacing.lg),
+              // Información de la incidencia
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Título de la incidencia y menú
+                    Row(
                       children: [
-                        // Título de la incidencia y menú
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                incidencia.incidencia,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1a1a1a),
-                                  letterSpacing: -0.3,
+                        Expanded(
+                          child: Text(
+                            incidencia.incidencia,
+                            style: AppTextStyles.h3,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Menú contextual
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => IncidenciaEditScreen(
+                                    incidenciaId: incidencia.idIncidencia,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            // Menú contextual
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: Color(0xFF6b7280),
-                                size: 20,
-                              ),
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => IncidenciaEditScreen(
-                                        incidenciaId: incidencia.idIncidencia,
-                                      ),
-                                    ),
-                                  ).then((result) {
-                                    if (result == true && mounted) {
-                                      controller.fetchIncidencias();
-                                    }
-                                  });
-                                } else if (value == 'delete') {
-                                  _showDeleteConfirmationDialog(context, incidencia, controller);
-                                } else if (value == 'detail') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => IncidenciaDetailScreen(
-                                        incidenciaId: incidencia.idIncidencia,
-                                      ),
-                                    ),
-                                  );
+                              ).then((result) {
+                                if (result == true && mounted) {
+                                  controller.fetchIncidencias();
                                 }
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                const PopupMenuItem<String>(
-                                  value: 'detail',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.visibility,
-                                        color: Color(0xFF667eea),
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Ver detalle'),
-                                    ],
+                              });
+                            } else if (value == 'delete') {
+                              _showDeleteConfirmationDialog(context, incidencia, controller);
+                            } else if (value == 'detail') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => IncidenciaDetailScreen(
+                                    incidenciaId: incidencia.idIncidencia,
                                   ),
                                 ),
-                                const PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.edit,
-                                        color: Color(0xFF667eea),
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Editar'),
-                                    ],
+                              );
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'detail',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.visibility,
+                                    color: AppColors.primary,
+                                    size: 20,
                                   ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Eliminar',
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ],
+                                  SizedBox(width: AppSpacing.sm),
+                                  const Text('Ver detalle'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    color: AppColors.primary,
+                                    size: 20,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(width: AppSpacing.sm),
+                                  const Text('Editar'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.delete,
+                                    color: AppColors.error,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    'Eliminar',
+                                    style: TextStyle(
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Descripción truncada
-                        Text(
-                          incidencia.descripcion,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF6b7280),
-                            letterSpacing: -0.2,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 12),
-                        // Fecha y habitación/área
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.calendar_today,
-                              size: 16,
-                              color: Color(0xFF6b7280),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              incidencia.fechaFormateada,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6b7280),
-                              ),
-                            ),
-                            if (incidencia.habitacionArea != null) ...[
-                              const SizedBox(width: 16),
-                              const Icon(
-                                Icons.room,
-                                size: 16,
-                                color: Color(0xFF6b7280),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  incidencia.habitacionArea!.nombreClave,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6b7280),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Badge de estatus
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: incidencia.idEstatus == 1
-                                ? Colors.green.shade50
-                                : Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                incidencia.idEstatus == 1
-                                    ? Icons.check_circle
-                                    : Icons.cancel,
-                                size: 12,
-                                color: incidencia.idEstatus == 1
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                incidencia.idEstatus == 1 ? 'Activa' : 'Inactiva',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: incidencia.idEstatus == 1
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    SizedBox(height: AppSpacing.sm),
+                    // Descripción truncada
+                    Text(
+                      incidencia.descripcion,
+                      style: AppTextStyles.bodyMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: AppSpacing.md),
+                    // Fecha y habitación/área
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        SizedBox(width: AppSpacing.xs),
+                        Text(
+                          incidencia.fechaFormateada,
+                          style: AppTextStyles.bodySmall,
+                        ),
+                        if (incidencia.habitacionArea != null) ...[
+                          SizedBox(width: AppSpacing.lg),
+                          Icon(
+                            Icons.room,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
+                          SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              incidencia.habitacionArea!.nombreClave,
+                              style: AppTextStyles.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    SizedBox(height: AppSpacing.sm),
+                    // Badge de estatus
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: incidencia.idEstatus == 1
+                            ? AppColors.successLight
+                            : AppColors.errorLight,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            incidencia.idEstatus == 1
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                            size: 12,
+                            color: incidencia.idEstatus == 1
+                                ? AppColors.success
+                                : AppColors.error,
+                          ),
+                          SizedBox(width: AppSpacing.xs),
+                          Text(
+                            incidencia.idEstatus == 1 ? 'Activa' : 'Inactiva',
+                            style: AppTextStyles.caption.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: incidencia.idEstatus == 1
+                                  ? AppColors.success
+                                  : AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -482,46 +369,37 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text(
+              title: Text(
                 'Eliminar incidencia',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1a1a1a),
-                ),
+                style: AppTextStyles.h2,
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Esta acción es permanente. Escribe \'Eliminar incidencia\' para confirmar.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6b7280),
-                    ),
+                    style: AppTextStyles.bodyMedium,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   TextFormField(
                     controller: confirmController,
                     autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'Confirmar eliminación',
-                      hintText: 'Escribe: Eliminar incidencia',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    decoration: AppInputStyles.standard(
+                      label: 'Confirmar eliminación',
+                      hint: 'Escribe: Eliminar incidencia',
+                    ).copyWith(
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.smBorder,
                         borderSide: const BorderSide(
-                          color: Colors.red,
+                          color: AppColors.error,
                           width: 1,
                         ),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.smBorder,
                         borderSide: const BorderSide(
-                          color: Colors.red,
+                          color: AppColors.error,
                           width: 2,
                         ),
                       ),
@@ -540,10 +418,10 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
                     confirmController.dispose();
                     Navigator.of(dialogContext).pop();
                   },
-                  child: const Text(
+                  child: Text(
                     'Cancelar',
                     style: TextStyle(
-                      color: Color(0xFF6b7280),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -583,21 +461,8 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
           child: Card(
             child: Padding(
               padding: EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(
-                    color: Color(0xFF667eea),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Eliminando...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF6b7280),
-                    ),
-                  ),
-                ],
+              child: AppLoadingIndicator(
+                message: 'Eliminando...',
               ),
             ),
           ),
@@ -625,9 +490,9 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
         // Mostrar mensaje de éxito
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Incidencia eliminada con éxito'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Incidencia eliminada con éxito'),
+              backgroundColor: AppColors.success,
             ),
           );
           // Refrescar lista
@@ -640,7 +505,7 @@ class _IncidenciasListScreenState extends State<IncidenciasListScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               action: SnackBarAction(
                 label: 'Reintentar',
                 textColor: Colors.white,

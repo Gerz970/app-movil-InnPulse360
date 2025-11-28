@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../controllers/mensajeria_controller.dart';
 import '../models/mensaje_model.dart';
 import '../../../core/auth/services/session_storage.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../widgets/app_loading_indicator.dart';
 
 class ChatConversacionScreen extends StatefulWidget {
   final int conversacionId;
@@ -102,17 +104,13 @@ class _ChatConversacionScreenState extends State<ChatConversacionScreen> {
             );
           },
         ),
-        backgroundColor: const Color(0xFF667eea),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Consumer<MensajeriaController>(
         builder: (context, controller, child) {
           if (controller.isLoadingMensajes && controller.mensajes.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF667eea),
-              ),
-            );
+            return const AppLoadingIndicator();
           }
 
           return Column(
@@ -121,7 +119,7 @@ class _ChatConversacionScreenState extends State<ChatConversacionScreen> {
                 child: ListView.builder(
                   controller: _scrollController,
                   reverse: true,
-                  padding: const EdgeInsets.all(16),
+                  padding: AppSpacing.allLg,
                   itemCount: controller.mensajes.length,
                   itemBuilder: (context, index) {
                     final mensaje = controller.mensajes[index];
@@ -143,13 +141,26 @@ class _ChatConversacionScreenState extends State<ChatConversacionScreen> {
     return Align(
       alignment: esMio ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        margin: EdgeInsets.only(bottom: AppSpacing.md),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
-          color: esMio
-              ? const Color(0xFF667eea)
-              : const Color(0xFFe5e7eb),
-          borderRadius: BorderRadius.circular(18),
+          color: esMio ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(esMio ? AppRadius.lg : AppRadius.sm),
+            topRight: Radius.circular(esMio ? AppRadius.sm : AppRadius.lg),
+            bottomLeft: Radius.circular(AppRadius.lg),
+            bottomRight: Radius.circular(AppRadius.lg),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -159,18 +170,17 @@ class _ChatConversacionScreenState extends State<ChatConversacionScreen> {
           children: [
             Text(
               mensaje.contenido,
-              style: TextStyle(
-                color: esMio ? Colors.white : Colors.black87,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: esMio ? Colors.white : AppColors.textPrimary,
                 fontSize: 15,
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: AppSpacing.xs),
             Text(
               _formatTime(mensaje.fechaEnvio),
-              style: TextStyle(
-                color: esMio
-                    ? Colors.white70
-                    : Colors.black54,
+              style: AppTextStyles.caption.copyWith(
+                color: esMio ? Colors.white70 : AppColors.textTertiary,
                 fontSize: 11,
               ),
             ),
@@ -182,49 +192,95 @@ class _ChatConversacionScreenState extends State<ChatConversacionScreen> {
 
   Widget _buildInputArea(MensajeriaController controller) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _mensajeController,
-              decoration: InputDecoration(
-                hintText: 'Escribe un mensaje...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppRadius.xlBorder,
                 ),
-                filled: true,
-                fillColor: const Color(0xFFf3f4f6),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
+                child: TextField(
+                  controller: _mensajeController,
+                  decoration: InputDecoration(
+                    hintText: 'Escribe un mensaje...',
+                    hintStyle: AppTextStyles.caption,
+                    border: OutlineInputBorder(
+                      borderRadius: AppRadius.xlBorder,
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppRadius.xlBorder,
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppRadius.xlBorder,
+                      borderSide: BorderSide(
+                        color: AppColors.primary,
+                        width: 1,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                  ),
+                  maxLines: null,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: AppTextStyles.bodyMedium,
                 ),
               ),
-              maxLines: null,
-              textCapitalization: TextCapitalization.sentences,
             ),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: const Color(0xFF667eea),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: _enviarMensaje,
+            SizedBox(width: AppSpacing.sm),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _enviarMensaje,
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: const Icon(
+                      Icons.send,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

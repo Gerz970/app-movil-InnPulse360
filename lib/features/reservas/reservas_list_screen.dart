@@ -5,6 +5,7 @@ import './models/reservas_model.dart';
 import './reservas_detail_screen.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../core/theme/app_theme.dart';
 
 class ReservacionesListScreen extends StatefulWidget {
   const ReservacionesListScreen({super.key});
@@ -33,7 +34,7 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppSidebar(),
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -44,18 +45,26 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                   if (controller.isLoading) {
                     return const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFF667eea),
+                        color: AppColors.primary,
                       ),
                     );
                   }
 
                   if (controller.errorMessage != null) {
-                    return Center(child: Text(controller.errorMessage!));
+                    return Center(
+                      child: Text(
+                        controller.errorMessage!,
+                        style: AppTextStyles.bodyLarge,
+                      ),
+                    );
                   }
 
                   if (controller.reservaciones.isEmpty) {
-                    return const Center(
-                      child: Text("No hay reservaciones para este cliente."),
+                    return Center(
+                      child: Text(
+                        "No hay reservaciones para este cliente.",
+                        style: AppTextStyles.bodyMedium,
+                      ),
                     );
                   }
 
@@ -65,13 +74,16 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                       .toList();
 
                   if (reservacionesActivas.isEmpty) {
-                    return const Center(
-                      child: Text("No hay reservaciones activas."),
+                    return Center(
+                      child: Text(
+                        "No hay reservaciones activas.",
+                        style: AppTextStyles.bodyMedium,
+                      ),
                     );
                   }
 
                   return GridView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: AppSpacing.allMd,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 12,
@@ -97,7 +109,7 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
   Widget _buildReservacionCard(Reservacion r) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -112,9 +124,9 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                 ),
               );
             },
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
               child: AspectRatio(
                 aspectRatio: 1.1,
                 child: Image.network(
@@ -125,9 +137,9 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey[200],
-                      child: const Icon(
+                      child: Icon(
                         Icons.bed,
-                        color: Color(0xFF667eea),
+                        color: AppColors.primary,
                         size: 32,
                       ),
                     );
@@ -139,7 +151,7 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
           // Contenido
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: AppSpacing.allSm,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -147,30 +159,31 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                   // Nombre de habitación
                   Text(
                     r.habitacion.nombreClave,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: AppSpacing.xs),
                   // Código de reservación
                   if (r.codigoReservacion != null && r.codigoReservacion!.isNotEmpty)
                     Flexible(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF667eea).withOpacity(0.1),
+                          color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           r.codigoReservacion!,
-                          style: const TextStyle(
-                            fontSize: 10,
+                          style: AppTextStyles.caption.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF667eea),
+                            color: AppColors.primary,
                             letterSpacing: 0.5,
                           ),
                           maxLines: 1,
@@ -178,24 +191,23 @@ class _ReservacionesListScreenState extends State<ReservacionesListScreen> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   // Cantidad (duración)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.timer,
                         size: 12,
-                        color: Color(0xFF667eea),
+                        color: AppColors.primary,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: AppSpacing.xs),
                       Flexible(
                         child: Text(
                           "${r.duracion} días",
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: AppTextStyles.bodySmall.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                            color: AppColors.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

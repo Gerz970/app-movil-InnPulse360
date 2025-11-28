@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/controllers/auth_controller.dart';
+import '../../core/theme/app_theme.dart';
+import '../../widgets/app_text_field.dart';
+import '../../widgets/app_button.dart';
 import 'cliente_register_screen.dart';
 import 'register_success_screen.dart';
 import 'login_screen.dart';
@@ -15,7 +18,8 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen> 
+    with SingleTickerProviderStateMixin {
   /// Controladores para los campos de texto
   final _loginController = TextEditingController();
   final _correoController = TextEditingController();
@@ -28,96 +32,184 @@ class _RegisterScreenState extends State<RegisterScreen> {
   
   /// Mensaje de estado actual (para mostrar en el overlay de carga)
   String _currentStatusMessage = '';
-
+  
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Animación de entrada
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _animationController.forward();
+  }
+  
   @override
   void dispose() {
     _loginController.dispose();
     _correoController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Color(0xFF1a1a1a),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary,
+              AppColors.primaryLight,
+              AppColors.primary.withOpacity(0.8),
+            ],
           ),
-          onPressed: () => Navigator.pop(context),
         ),
-      ),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 64),
-                      _buildForm(),
-                      const SizedBox(height: 16),
-                      _buildErrorMessage(),
-                      const SizedBox(height: 16),
-                      _buildRegistrarButton(),
-                    ],
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Círculos decorativos de fondo
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
                   ),
                 ),
               ),
-            ),
-          ),
-          // Overlay de carga durante el procesamiento
-          if (_isProcessing)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
+              Positioned(
+                bottom: -150,
+                left: -150,
                 child: Container(
-                  padding: const EdgeInsets.all(24),
+                  width: 400,
+                  height: 400,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 250,
-                        child: Column(
-                          children: [
-                            LinearProgressIndicator(
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
-                              minHeight: 4,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _currentStatusMessage,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1a1a1a),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                ),
+              ),
+              
+              // Botón de regresar
+              Positioned(
+                top: 0,
+                left: 0,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              
+              // Contenido principal
+              Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xxxl,
+                    vertical: AppSpacing.xxxl,
+                  ),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: 420,
+                          minHeight: screenHeight * 0.7,
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildHeader(),
+                              SizedBox(height: AppSpacing.xxxl),
+                              _buildRegisterCard(),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+              
+              // Overlay de carga durante el procesamiento
+              if (_isProcessing)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: Center(
+                    child: Container(
+                      padding: EdgeInsets.all(AppSpacing.xxl),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: AppRadius.mdBorder,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: Column(
+                              children: [
+                                LinearProgressIndicator(
+                                  backgroundColor: Colors.grey.shade200,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                  minHeight: 4,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                SizedBox(height: AppSpacing.lg),
+                                Text(
+                                  _currentStatusMessage,
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -126,36 +218,195 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
+        // Logo con efecto de elevación
         Container(
+          padding: EdgeInsets.all(AppSpacing.xxl),
           decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          child: const SizedBox(
-            width: 200,
-            height: 100,
-            child: Image(
-              image: AssetImage('lib/assets/splash_logo.png'),
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'lib/assets/splash_logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.hotel,
+                    size: 60,
+                    color: AppColors.primary,
+                  );
+                },
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 32),
-        const Text(
-          'Registro de Usuario',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1a1a1a),
+        SizedBox(height: AppSpacing.xxxl),
+        // Título con mejor estilo
+        Text(
+          'Crear Cuenta',
+          style: AppTextStyles.h1.copyWith(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'Ingresa tu correo y login para crear tu cuenta',
-          style: TextStyle(
+        SizedBox(height: AppSpacing.sm),
+        Text(
+          'Comienza tu gestión hotelera',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: Colors.white.withOpacity(0.9),
             fontSize: 16,
-            color: Color(0xFF6b7280),
             fontWeight: FontWeight.w400,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.1),
+                offset: const Offset(0, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// Widget para construir la card de registro
+  Widget _buildRegisterCard() {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.xxxl),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título del formulario
+          Text(
+            'Registro de Usuario',
+            style: AppTextStyles.h2.copyWith(
+              color: AppColors.textPrimary,
+              fontSize: 24,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            'Ingresa tu correo y login para crear tu cuenta',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.xxxl),
+          
+          // Formulario
+          _buildForm(),
+          SizedBox(height: AppSpacing.lg),
+          _buildErrorMessage(),
+          SizedBox(height: AppSpacing.lg),
+          _buildRegistrarButton(),
+          SizedBox(height: AppSpacing.xxl),
+          _buildDivider(),
+          SizedBox(height: AppSpacing.xxl),
+          _buildFooterOption(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Divider(
+            color: AppColors.border,
+            thickness: 1,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Text(
+            'o',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: AppColors.border,
+            thickness: 1,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildFooterOption() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '¿Ya tienes una cuenta?',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        SizedBox(width: AppSpacing.xs),
+        TextButton(
+          onPressed: _navegarALogin,
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: AppSpacing.xs,
+            ),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            'Inicia sesión',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -166,140 +417,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildForm() {
     return Column(
       children: [
-        _buildLoginField(),
-        const SizedBox(height: 20),
-        _buildCorreoField(),
+        AppTextField(
+          controller: _loginController,
+          label: 'Login',
+          hint: 'Ingresa tu login',
+          prefixIcon: Icons.person_outline,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          enabled: !_isProcessing,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'El login es requerido';
+            }
+            if (value.trim().length < 3) {
+              return 'El login debe tener al menos 3 caracteres';
+            }
+            if (value.trim().length > 25) {
+              return 'El login no puede tener más de 25 caracteres';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: AppSpacing.xl),
+        AppTextField(
+          controller: _correoController,
+          label: 'Correo electrónico',
+          hint: 'ejemplo@correo.com',
+          prefixIcon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.done,
+          enabled: !_isProcessing,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'El correo electrónico es requerido';
+            }
+            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+            if (!emailRegex.hasMatch(value.trim())) {
+              return 'Correo electrónico no válido';
+            }
+            return null;
+          },
+        ),
       ],
-    );
-  }
-
-  /// Widget para campo de login
-  Widget _buildLoginField() {
-    return TextFormField(
-      controller: _loginController,
-      enabled: !_isProcessing,
-      decoration: InputDecoration(
-        labelText: 'Login',
-        hintText: 'Ingresa tu login',
-        prefixIcon: const Icon(
-          Icons.person_outline,
-          color: Color(0xFF6b7280),
-          size: 20,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF667eea),
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
-          fontSize: 14,
-        ),
-        hintStyle: const TextStyle(
-          color: Color(0xFF9ca3af),
-          fontSize: 14,
-        ),
-      ),
-      keyboardType: TextInputType.text,
-      textInputAction: TextInputAction.next,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'El login es requerido';
-        }
-        if (value.trim().length < 3) {
-          return 'El login debe tener al menos 3 caracteres';
-        }
-        if (value.trim().length > 25) {
-          return 'El login no puede tener más de 25 caracteres';
-        }
-        return null;
-      },
-    );
-  }
-
-  /// Widget para campo de correo
-  Widget _buildCorreoField() {
-    return TextFormField(
-      controller: _correoController,
-      enabled: !_isProcessing,
-      decoration: InputDecoration(
-        labelText: 'Correo electrónico',
-        hintText: 'ejemplo@correo.com',
-        prefixIcon: const Icon(
-          Icons.email_outlined,
-          color: Color(0xFF6b7280),
-          size: 20,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF667eea),
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
-          fontSize: 14,
-        ),
-        hintStyle: const TextStyle(
-          color: Color(0xFF9ca3af),
-          fontSize: 14,
-        ),
-      ),
-      keyboardType: TextInputType.emailAddress,
-      textInputAction: TextInputAction.done,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'El correo electrónico es requerido';
-        }
-        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-        if (!emailRegex.hasMatch(value.trim())) {
-          return 'Correo electrónico no válido';
-        }
-        return null;
-      },
     );
   }
 
@@ -313,22 +472,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
         
         if (errorMessage != null && errorMessage.isNotEmpty && !_isProcessing) {
           return Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200),
+              color: AppColors.errorLight,
+              borderRadius: AppRadius.mdBorder,
+              border: Border.all(
+                color: AppColors.error.withOpacity(0.4),
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                const SizedBox(width: 8),
+                Icon(
+                  Icons.error_outline,
+                  color: AppColors.error.withOpacity(0.7),
+                  size: 20,
+                ),
+                SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     errorMessage,
-                    style: TextStyle(
-                      color: Colors.red.shade700,
-                      fontSize: 14,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error.withOpacity(0.8),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -344,29 +512,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   /// Widget para botón de registro (único botón)
   Widget _buildRegistrarButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.mdBorder,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: AppButton(
+        text: 'Registrarse',
         onPressed: _isProcessing ? null : _handleRegistroCompleto,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF667eea),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          disabledBackgroundColor: const Color(0xFF9ca3af),
-        ),
-        child: const Text(
-          'Registrarse',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
+        isLoading: _isProcessing,
       ),
     );
   }
@@ -531,7 +692,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.error,
         duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
       ),

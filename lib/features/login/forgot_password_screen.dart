@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../core/auth/services/auth_service.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../widgets/app_text_field.dart';
+import '../../../widgets/app_button.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -9,65 +12,150 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> 
+    with SingleTickerProviderStateMixin {
   /// Controlador para el campo de correo electrónico
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String? _errorMessage;
   bool _emailSent = false;
+  
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Animación de entrada
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Color(0xFF1a1a1a),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Recuperar Contraseña',
-          style: TextStyle(
-            color: Color(0xFF1a1a1a),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary,
+              AppColors.primaryLight,
+              AppColors.primary.withOpacity(0.8),
+            ],
           ),
         ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 48),
-                  if (_emailSent)
-                    _buildSuccessMessage()
-                  else
-                    _buildForm(),
-                  const SizedBox(height: 24),
-                  if (!_emailSent) _buildSubmitButton(),
-                  if (_emailSent) _buildBackToLoginButton(),
-                ],
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Círculos decorativos de fondo
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                ),
               ),
-            ),
+              Positioned(
+                bottom: -150,
+                left: -150,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                ),
+              ),
+              
+              // Botón de regresar
+              Positioned(
+                top: 0,
+                left: 0,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+              
+              // Contenido principal
+              Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xxxl,
+                    vertical: AppSpacing.xxxl,
+                  ),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: 420,
+                          minHeight: screenHeight * 0.7,
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildHeader(),
+                              SizedBox(height: AppSpacing.xxxl),
+                              if (_emailSent)
+                                _buildSuccessCard()
+                              else
+                                _buildPasswordCard(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -77,128 +165,176 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
+        // Ícono de candado con efecto de elevación
         Container(
-          width: 80,
-          height: 80,
+          padding: EdgeInsets.all(AppSpacing.xxl),
           decoration: BoxDecoration(
-            color: const Color(0xFF667eea).withOpacity(0.1),
+            color: Colors.white.withOpacity(0.2),
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.lock_reset,
-            size: 40,
-            color: Color(0xFF667eea),
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.lock_reset,
+              size: 60,
+              color: AppColors.primary,
+            ),
           ),
         ),
-        const SizedBox(height: 24),
-        const Text(
-          '¿Olvidaste tu contraseña?',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1a1a1a),
-            letterSpacing: -0.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
+        SizedBox(height: AppSpacing.xxxl),
+        // Título con mejor estilo
         Text(
-          _emailSent
-              ? 'Revisa tu correo electrónico para obtener tu contraseña temporal'
-              : 'Ingresa tu correo electrónico y te enviaremos una contraseña temporal',
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF6b7280),
-            fontWeight: FontWeight.w400,
+          'Recuperar Contraseña',
+          style: AppTextStyles.h1.copyWith(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                offset: const Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
           ),
-          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.sm),
+        Text(
+          'Te ayudaremos a recuperar tu acceso',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.1),
+                offset: const Offset(0, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+  
+  Widget _buildPasswordCard() {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.xxxl),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título del formulario
+          Text(
+            '¿Olvidaste tu contraseña?',
+            style: AppTextStyles.h2.copyWith(
+              color: AppColors.textPrimary,
+              fontSize: 24,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text(
+            'Ingresa tu correo electrónico y te enviaremos una contraseña temporal',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.xxxl),
+          
+          // Formulario
+          _buildForm(),
+          SizedBox(height: AppSpacing.lg),
+          _buildSubmitButton(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSuccessCard() {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.xxxl),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSuccessMessage(),
+          SizedBox(height: AppSpacing.xxl),
+          _buildBackToLoginButton(),
+        ],
+      ),
     );
   }
 
   Widget _buildForm() {
     return Column(
       children: [
-        _buildEmailField(),
-        const SizedBox(height: 16),
+        AppTextField(
+          controller: _emailController,
+          label: 'Correo Electrónico',
+          hint: 'usuario@ejemplo.com',
+          prefixIcon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.done,
+          enabled: !_isLoading,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Por favor, ingresa tu correo electrónico';
+            }
+            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+            if (!emailRegex.hasMatch(value.trim())) {
+              return 'Por favor, ingresa un correo electrónico válido';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: AppSpacing.lg),
         if (_errorMessage != null) _buildErrorMessage(),
       ],
-    );
-  }
-
-  Widget _buildEmailField() {
-    return TextFormField(
-      controller: _emailController,
-      keyboardType: TextInputType.emailAddress,
-      textInputAction: TextInputAction.done,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Por favor, ingresa tu correo electrónico';
-        }
-        if (!value.contains('@') || !value.contains('.')) {
-          return 'Por favor, ingresa un correo electrónico válido';
-        }
-        return null;
-      },
-      decoration: InputDecoration(
-        labelText: 'Correo Electrónico',
-        hintText: 'usuario@ejemplo.com',
-        prefixIcon: const Icon(
-          Icons.email_outlined,
-          color: Color(0xFF6b7280),
-          size: 20,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFe5e7eb),
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF667eea),
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFDC2626),
-            width: 1,
-          ),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFDC2626),
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFF6b7280),
-          fontSize: 14,
-        ),
-        hintStyle: const TextStyle(
-          color: Color(0xFF9ca3af),
-          fontSize: 14,
-        ),
-      ),
     );
   }
 
@@ -206,12 +342,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (_errorMessage == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + 2,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2).withOpacity(0.6),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.errorLight,
+        borderRadius: AppRadius.smBorder,
         border: Border.all(
-          color: const Color(0xFFFCA5A5).withOpacity(0.4),
+          color: AppColors.error.withOpacity(0.4),
           width: 1,
         ),
       ),
@@ -219,18 +358,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         children: [
           Icon(
             Icons.error_outline,
-            color: const Color(0xFFDC2626).withOpacity(0.7),
+            color: AppColors.error.withOpacity(0.7),
             size: 16,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(
-                color: const Color(0xFF991B1B).withOpacity(0.8),
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                letterSpacing: 0.2,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.error.withOpacity(0.8),
               ),
             ),
           ),
@@ -240,137 +376,103 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildSuccessMessage() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4).withOpacity(0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF86EFAC).withOpacity(0.4),
-          width: 1,
+    return Column(
+      children: [
+        Icon(
+          Icons.check_circle_outline,
+          color: AppColors.success,
+          size: 64,
         ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: const Color(0xFF16A34A),
-            size: 48,
+        SizedBox(height: AppSpacing.lg),
+        Text(
+          'Correo Enviado',
+          style: AppTextStyles.h2.copyWith(
+            color: AppColors.success,
+            fontSize: 24,
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Correo Enviado',
-            style: TextStyle(
-              color: Color(0xFF16A34A),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.md),
+        Text(
+          'Si el correo existe en nuestro sistema, se ha enviado una contraseña temporal.',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.xxl),
+        Container(
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.warningLight,
+            borderRadius: AppRadius.mdBorder,
+            border: Border.all(
+              color: AppColors.warning.withOpacity(0.3),
+              width: 1,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Si el correo existe en nuestro sistema, se ha enviado una contraseña temporal.',
-            style: TextStyle(
-              color: const Color(0xFF166534).withOpacity(0.8),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7).withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: const Color(0xFFD97706),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'La contraseña temporal expira en 7 días. Debes cambiarla al ingresar al sistema.',
-                    style: TextStyle(
-                      color: const Color(0xFF92400E).withOpacity(0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                    ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: AppColors.warning,
+                size: 20,
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'La contraseña temporal expira en 7 días. Debes cambiarla al ingresar al sistema.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.warning.withOpacity(0.9),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleRecoverPassword,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF667eea),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.mdBorder,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+            spreadRadius: 0,
           ),
-          disabledBackgroundColor: const Color(0xFF9ca3af),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                'Enviar Contraseña Temporal',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
+        ],
+      ),
+      child: AppButton(
+        text: 'Enviar Contraseña Temporal',
+        onPressed: _isLoading ? null : _handleRecoverPassword,
+        isLoading: _isLoading,
       ),
     );
   }
 
   Widget _buildBackToLoginButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.mdBorder,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: AppButton(
+        text: 'Volver al Inicio de Sesión',
         onPressed: () {
           Navigator.of(context).pop();
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF667eea),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          'Volver al Inicio de Sesión',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
       ),
     );
   }

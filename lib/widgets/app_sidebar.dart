@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth/controllers/auth_controller.dart';
+import '../core/theme/app_theme.dart';
 import '../core/utils/modules.dart';
 import '../features/common/under_construction_screen.dart';
 import '../features/hoteles/controllers/hotel_controller.dart';
@@ -85,12 +86,12 @@ class AppSidebar extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: AppSpacing.allXl,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.background,
                       border: Border(
                         bottom: BorderSide(
-                          color: const Color(0xFFe5e7eb),
+                          color: AppColors.border,
                           width: 1,
                         ),
                       ),
@@ -99,7 +100,7 @@ class AppSidebar extends StatelessWidget {
                       children: [
                         // Foto de perfil circular - construida directamente desde loginResponse
                         _buildAvatarFromSession(loginResponse),
-                        const SizedBox(width: 12),
+                        SizedBox(width: AppSpacing.md),
                         // Login del usuario
                         Expanded(
                           child: Column(
@@ -108,23 +109,17 @@ class AppSidebar extends StatelessWidget {
                             children: [
                               Text(
                                 userLogin,
-                                style: const TextStyle(
+                                style: AppTextStyles.h3.copyWith(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1a1a1a),
-                                  letterSpacing: -0.3,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 userEmail,
-                                style: TextStyle(
+                                style: AppTextStyles.bodySmall.copyWith(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: const Color(0xFF6b7280),
-                                  letterSpacing: -0.2,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -132,9 +127,9 @@ class AppSidebar extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right,
-                          color: Color(0xFF6b7280),
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                       ],
@@ -145,24 +140,24 @@ class AppSidebar extends StatelessWidget {
                 // Solo mostrar si el usuario NO es cliente
                 if (!esCliente)
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.lg,
                     ),
                     child: Consumer<HotelController>(
                     builder: (context, hotelController, child) {
                       // Mientras está cargando hoteles
                       if (hotelController.isLoading) {
                         return Row(
-                          children: const [
-                            CircularProgressIndicator(strokeWidth: 2),
-                            SizedBox(width: 12),
+                          children: [
+                            CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            ),
+                            SizedBox(width: AppSpacing.md),
                             Text(
                               "Cargando hoteles...",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF6b7280),
-                              ),
+                              style: AppTextStyles.bodyMedium,
                             ),
                           ],
                         );
@@ -172,49 +167,38 @@ class AppSidebar extends StatelessWidget {
                       if (hotelController.errorMessage != null) {
                         return Text(
                           "Error al cargar hoteles",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red[400],
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.error,
                           ),
                         );
                       }
 
                       // Si no hay hoteles
                       if (hotelController.hotels.isEmpty) {
-                        return const Text(
+                        return Text(
                           "No hay hoteles",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6b7280),
-                          ),
+                          style: AppTextStyles.bodyMedium,
                         );
                       }
 
                       return DropdownButtonFormField<int>(
                         value: hotelController.hotelSeleccionado?.idHotel,
-                        decoration: InputDecoration(
-                          labelText: "Hotel",
-                          labelStyle: const TextStyle(
-                            color: Color(0xFF6b7280),
-                            fontSize: 14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                        decoration: AppInputStyles.standard(
+                          label: "Hotel",
+                        ).copyWith(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
                           ),
                         ),
-                        dropdownColor: Colors.white,
+                        dropdownColor: AppColors.background,
                         items: hotelController.hotels.map((hotel) {
                           return DropdownMenuItem<int>(
                             value: hotel.idHotel,
                             child: Text(
                               hotel.nombre,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF1a1a1a),
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           );
@@ -310,15 +294,12 @@ class AppSidebar extends StatelessWidget {
 
     // Si no hay módulos móviles, mostrar mensaje
     if (modulosMovil.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
+          padding: AppSpacing.allXl,
           child: Text(
             'No hay módulos disponibles',
-            style: TextStyle(
-              color: Color(0xFF6b7280),
-              fontSize: 14,
-            ),
+            style: AppTextStyles.bodyMedium,
           ),
         ),
       );
@@ -326,7 +307,7 @@ class AppSidebar extends StatelessWidget {
 
     // Construir lista de widgets de módulos
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
       children: modulosMovil.map<Widget>((modulo) {
         final moduloMap = modulo as Map<String, dynamic>;
         final nombreModulo = moduloMap['nombre'] as String? ?? '';
@@ -340,7 +321,7 @@ class AppSidebar extends StatelessWidget {
               title: nombreModulo,
               onTap: () => _navigateToModuleScreen(context, rutaModulo),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
           ],
         );
       }).toList(),
@@ -410,22 +391,24 @@ class AppSidebar extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF667eea).withOpacity(0.1),
+          color: AppColors.primary.withOpacity(0.1),
         ),
-        child: Icon(icon, color: const Color(0xFF667eea), size: 22),
+        child: Icon(icon, color: AppColors.primary, size: 22),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: AppTextStyles.bodyMedium.copyWith(
           fontSize: 15,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1a1a1a),
-          letterSpacing: -0.2,
+          color: AppColors.textPrimary,
         ),
       ),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.xs,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.smBorder),
     );
   }
 
@@ -469,7 +452,7 @@ class AppSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: const Color(0xFF667eea).withOpacity(0.3),
+          color: AppColors.primary.withOpacity(0.3),
           width: 2,
         ),
       ),
@@ -484,10 +467,10 @@ class AppSidebar extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) {
                   print('DEBUG Sidebar: Error al cargar imagen: $error');
                   return Container(
-                    color: const Color(0xFF667eea).withOpacity(0.1),
-                    child: const Icon(
+                    color: AppColors.primary.withOpacity(0.1),
+                    child: Icon(
                       Icons.person,
-                      color: Color(0xFF667eea),
+                      color: AppColors.primary,
                       size: 28,
                     ),
                   );
@@ -495,21 +478,21 @@ class AppSidebar extends StatelessWidget {
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    color: const Color(0xFF667eea).withOpacity(0.1),
-                    child: const Center(
+                    color: AppColors.primary.withOpacity(0.1),
+                    child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                       ),
                     ),
                   );
                 },
               )
             : Container(
-                color: const Color(0xFF667eea).withOpacity(0.1),
-                child: const Icon(
+                color: AppColors.primary.withOpacity(0.1),
+                child: Icon(
                   Icons.person,
-                  color: Color(0xFF667eea),
+                  color: AppColors.primary,
                   size: 28,
                 ),
               ),

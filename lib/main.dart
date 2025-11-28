@@ -6,6 +6,7 @@ import 'features/login/login_screen.dart';
 import 'core/auth/controllers/auth_controller.dart';
 import 'core/sidebar/sidebar_controller.dart';
 import 'core/notifications/fcm_service.dart';
+import 'core/theme/app_theme.dart';
 import 'features/hoteles/controllers/hotel_controller.dart';
 import 'features/clientes/controllers/cliente_controller.dart';
 import 'features/incidencias/controllers/incidencia_controller.dart';
@@ -168,8 +169,12 @@ class MyApp extends StatelessWidget {
         navigatorKey: navigatorKey,
         title: 'InnPulse App',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF667eea)),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.primary,
+            brightness: Brightness.light,
+          ),
           useMaterial3: true,
+          cardTheme: AppCardStyles.cardTheme(),
         ),
         home: const LoginScreen(),
         debugShowCheckedModeBanner: false,
