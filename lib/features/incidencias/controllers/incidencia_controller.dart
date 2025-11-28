@@ -32,7 +32,7 @@ class IncidenciaController extends ChangeNotifier {
   String? _detailErrorMessage; // Mensaje de error al cargar detalle
   bool _isUpdating = false; // Estado de actualización
   String? _updateErrorMessage; // Mensaje de error al actualizar
-  
+
   // Estados para eliminación
   bool _isDeleting = false; // Estado de eliminación
   String? _deleteErrorMessage; // Mensaje de error al eliminar
@@ -50,27 +50,28 @@ class IncidenciaController extends ChangeNotifier {
   List<Incidencia> get incidencias => _incidencias;
   String? get errorMessage => _errorMessage;
   bool get isNotAuthenticated => _isNotAuthenticated;
-  bool get isEmpty => _incidencias.isEmpty && !_isLoading && _errorMessage == null;
-  
+  bool get isEmpty =>
+      _incidencias.isEmpty && !_isLoading && _errorMessage == null;
+
   // Getters para catálogos
   List<HabitacionArea> get habitacionesAreas => _habitacionesAreas;
   bool get isLoadingCatalogs => _isLoadingCatalogs;
-  
+
   // Getters para creación
   bool get isCreating => _isCreating;
   String? get createErrorMessage => _createErrorMessage;
-  
+
   // Getters para detalle y actualización
   Incidencia? get incidenciaDetail => _incidenciaDetail;
   bool get isLoadingDetail => _isLoadingDetail;
   String? get detailErrorMessage => _detailErrorMessage;
   bool get isUpdating => _isUpdating;
   String? get updateErrorMessage => _updateErrorMessage;
-  
+
   // Getters para eliminación
   bool get isDeleting => _isDeleting;
   String? get deleteErrorMessage => _deleteErrorMessage;
-  
+
   // Getters para galería
   List<GaleriaImagen> get galeriaImagenes => _galeriaImagenes;
   bool get isLoadingGaleria => _isLoadingGaleria;
@@ -118,28 +119,32 @@ class IncidenciaController extends ChangeNotifier {
         // Verificar si hay respuesta del servidor
         if (e.response != null) {
           final responseData = e.response?.data;
-          
+
           // Verificar si es error de autenticación
-          if (responseData is Map<String, dynamic> && 
+          if (responseData is Map<String, dynamic> &&
               responseData['detail'] == 'Not authenticated') {
             _isNotAuthenticated = true;
-            _errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            _errorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
             print('Error de autenticación: ${e.response?.data}');
           } else {
             // Otro error del servidor
-            _errorMessage = 'Error ${e.response?.statusCode}: ${e.response?.data}';
+            _errorMessage =
+                'Error ${e.response?.statusCode}: ${e.response?.data}';
             print('Error del servidor: ${e.response?.data}');
           }
         } else {
           // Error de conexión (sin respuesta del servidor)
           // Limpiar el mensaje técnico y mostrar uno más amigable
           final errorMsg = e.message ?? e.toString();
-          if (errorMsg.contains('XMLHttpRequest') || 
+          if (errorMsg.contains('XMLHttpRequest') ||
               errorMsg.contains('connection') ||
               errorMsg.contains('network')) {
-            _errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+            _errorMessage =
+                'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
           } else {
-            _errorMessage = 'Error de conexión: ${errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg}';
+            _errorMessage =
+                'Error de conexión: ${errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg}';
           }
           print('Error de conexión: ${e.message}');
         }
@@ -177,12 +182,15 @@ class IncidenciaController extends ChangeNotifier {
       }
 
       // Hacer petición al API directamente con el cliente_id
-      final response = await _incidenciaService.fetchHabitacionesReservadasCliente(clienteId);
+      final response = await _incidenciaService
+          .fetchHabitacionesReservadasCliente(clienteId);
 
       // Parsear respuesta a lista de HabitacionArea
       if (response.data != null && response.data is List) {
         _habitacionesAreas = (response.data as List)
-            .map((json) => HabitacionArea.fromJson(json as Map<String, dynamic>))
+            .map(
+              (json) => HabitacionArea.fromJson(json as Map<String, dynamic>),
+            )
             .toList();
       } else {
         _habitacionesAreas = [];
@@ -194,7 +202,7 @@ class IncidenciaController extends ChangeNotifier {
       print("✅ Habitaciones reservadas cargadas correctamente");
       print('Cliente ID: $clienteId');
       print('Total de habitaciones: ${_habitacionesAreas.length}');
-      } catch (e) {
+    } catch (e) {
       _isLoadingCatalogs = false;
       print('❌ Error cargando habitaciones reservadas: $e');
 
@@ -205,16 +213,23 @@ class IncidenciaController extends ChangeNotifier {
           // Error 401 - No autenticado
           if (e.response?.statusCode == 401 ||
               (responseData is Map<String, dynamic> &&
-               responseData['detail'] == 'Not authenticated')) {
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al cargar habitaciones: ${e.response?.data}');
+            _errorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print(
+              'Error de autenticación al cargar habitaciones: ${e.response?.data}',
+            );
           } else {
-            _errorMessage = 'Error al cargar habitaciones: ${e.response?.statusCode}';
-            print('Error del servidor al cargar habitaciones: ${e.response?.data}');
+            _errorMessage =
+                'Error al cargar habitaciones: ${e.response?.statusCode}';
+            print(
+              'Error del servidor al cargar habitaciones: ${e.response?.data}',
+            );
           }
         } else {
-          _errorMessage = 'Error de conexión al cargar habitaciones: ${e.message ?? e.toString()}';
+          _errorMessage =
+              'Error de conexión al cargar habitaciones: ${e.message ?? e.toString()}';
           print('Error de conexión al cargar habitaciones: ${e.message}');
         }
       } else {
@@ -235,11 +250,15 @@ class IncidenciaController extends ChangeNotifier {
 
     try {
       // Crear incidencia mediante el servicio
-      final response = await _incidenciaService.createIncidencia(incidenciaData);
+      final response = await _incidenciaService.createIncidencia(
+        incidenciaData,
+      );
 
       // Si éxito, guardar el detalle de la incidencia creada
       if (response.data != null && response.data is Map<String, dynamic>) {
-        _incidenciaDetail = Incidencia.fromJson(response.data as Map<String, dynamic>);
+        _incidenciaDetail = Incidencia.fromJson(
+          response.data as Map<String, dynamic>,
+        );
       }
 
       _isCreating = false;
@@ -263,26 +282,34 @@ class IncidenciaController extends ChangeNotifier {
           final statusCode = e.response?.statusCode;
 
           // Error 401 - No autenticado
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _createErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al crear incidencia: ${e.response?.data}');
+            _createErrorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print(
+              'Error de autenticación al crear incidencia: ${e.response?.data}',
+            );
           }
           // Error 422 - Validación
           else if (statusCode == 422) {
             _createErrorMessage = 'Error de validación: ${e.response?.data}';
-            print('Error de validación al crear incidencia: ${e.response?.data}');
+            print(
+              'Error de validación al crear incidencia: ${e.response?.data}',
+            );
           }
           // Otro error del servidor
           else {
             _createErrorMessage = 'Error ${statusCode}: ${e.response?.data}';
-            print('Error del servidor al crear incidencia: ${e.response?.data}');
+            print(
+              'Error del servidor al crear incidencia: ${e.response?.data}',
+            );
           }
         } else {
           // Error de conexión
-          _createErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          _createErrorMessage =
+              'Error de conexión: ${e.message ?? e.toString()}';
           print('Error de conexión al crear incidencia: ${e.message}');
         }
       } else {
@@ -306,20 +333,31 @@ class IncidenciaController extends ChangeNotifier {
 
     try {
       // Cargar detalle de la incidencia
-      final response = await _incidenciaService.fetchIncidenciaDetail(incidenciaId);
-      
+      final response = await _incidenciaService.fetchIncidenciaDetail(
+        incidenciaId,
+      );
+
       // Parsear respuesta a Incidencia
       if (response.data != null && response.data is Map<String, dynamic>) {
-        _incidenciaDetail = Incidencia.fromJson(response.data as Map<String, dynamic>);
+        _incidenciaDetail = Incidencia.fromJson(
+          response.data as Map<String, dynamic>,
+        );
 
         // Si la habitación no viene en la respuesta, intentar cargarla por separado
-        if (_incidenciaDetail != null && _incidenciaDetail!.habitacionArea == null) {
+        if (_incidenciaDetail != null &&
+            _incidenciaDetail!.habitacionArea == null) {
           try {
-            print('Habitación no incluida en respuesta, cargando por separado...');
-            final habitacionResponse = await _incidenciaService.fetchHabitacionArea(_incidenciaDetail!.habitacionAreaId);
+            print(
+              'Habitación no incluida en respuesta, cargando por separado...',
+            );
+            final habitacionResponse = await _incidenciaService
+                .fetchHabitacionArea(_incidenciaDetail!.habitacionAreaId);
 
-            if (habitacionResponse.data != null && habitacionResponse.data is Map<String, dynamic>) {
-              final habitacionArea = HabitacionArea.fromJson(habitacionResponse.data as Map<String, dynamic>);
+            if (habitacionResponse.data != null &&
+                habitacionResponse.data is Map<String, dynamic>) {
+              final habitacionArea = HabitacionArea.fromJson(
+                habitacionResponse.data as Map<String, dynamic>,
+              );
               // Crear una nueva instancia de Incidencia con la habitación cargada
               _incidenciaDetail = Incidencia(
                 idIncidencia: _incidenciaDetail!.idIncidencia,
@@ -356,12 +394,15 @@ class IncidenciaController extends ChangeNotifier {
           final statusCode = e.response?.statusCode;
 
           // Error 401 - No autenticado
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _detailErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al cargar detalle: ${e.response?.data}');
+            _detailErrorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print(
+              'Error de autenticación al cargar detalle: ${e.response?.data}',
+            );
           }
           // Otro error del servidor
           else {
@@ -370,7 +411,8 @@ class IncidenciaController extends ChangeNotifier {
           }
         } else {
           // Error de conexión
-          _detailErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          _detailErrorMessage =
+              'Error de conexión: ${e.message ?? e.toString()}';
           print('Error de conexión al cargar detalle: ${e.message}');
         }
       } else {
@@ -385,18 +427,26 @@ class IncidenciaController extends ChangeNotifier {
 
   /// Método para actualizar una incidencia
   /// Recibe incidenciaId y Map con los datos a actualizar
-  Future<bool> updateIncidencia(int incidenciaId, Map<String, dynamic> incidenciaData) async {
+  Future<bool> updateIncidencia(
+    int incidenciaId,
+    Map<String, dynamic> incidenciaData,
+  ) async {
     _isUpdating = true;
     _updateErrorMessage = null;
     notifyListeners();
 
     try {
       // Actualizar incidencia mediante el servicio
-      final response = await _incidenciaService.updateIncidencia(incidenciaId, incidenciaData);
+      final response = await _incidenciaService.updateIncidencia(
+        incidenciaId,
+        incidenciaData,
+      );
 
       // Si éxito, actualizar _incidenciaDetail con los nuevos datos
       if (response.data != null && response.data is Map<String, dynamic>) {
-        _incidenciaDetail = Incidencia.fromJson(response.data as Map<String, dynamic>);
+        _incidenciaDetail = Incidencia.fromJson(
+          response.data as Map<String, dynamic>,
+        );
       }
 
       _isUpdating = false;
@@ -417,26 +467,34 @@ class IncidenciaController extends ChangeNotifier {
           final statusCode = e.response?.statusCode;
 
           // Error 401 - No autenticado
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _updateErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al actualizar incidencia: ${e.response?.data}');
+            _updateErrorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print(
+              'Error de autenticación al actualizar incidencia: ${e.response?.data}',
+            );
           }
           // Error 422 - Validación
           else if (statusCode == 422) {
             _updateErrorMessage = 'Error de validación: ${e.response?.data}';
-            print('Error de validación al actualizar incidencia: ${e.response?.data}');
+            print(
+              'Error de validación al actualizar incidencia: ${e.response?.data}',
+            );
           }
           // Otro error del servidor
           else {
             _updateErrorMessage = 'Error ${statusCode}: ${e.response?.data}';
-            print('Error del servidor al actualizar incidencia: ${e.response?.data}');
+            print(
+              'Error del servidor al actualizar incidencia: ${e.response?.data}',
+            );
           }
         } else {
           // Error de conexión
-          _updateErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          _updateErrorMessage =
+              'Error de conexión: ${e.message ?? e.toString()}';
           print('Error de conexión al actualizar incidencia: ${e.message}');
         }
       } else {
@@ -466,8 +524,10 @@ class IncidenciaController extends ChangeNotifier {
       // Verificar código de respuesta
       if (response.statusCode == 200 || response.statusCode == 204) {
         // Eliminar incidencia de la lista local
-        _incidencias.removeWhere((incidencia) => incidencia.idIncidencia == incidenciaId);
-        
+        _incidencias.removeWhere(
+          (incidencia) => incidencia.idIncidencia == incidenciaId,
+        );
+
         _isDeleting = false;
         notifyListeners();
 
@@ -491,12 +551,15 @@ class IncidenciaController extends ChangeNotifier {
           final statusCode = e.response?.statusCode;
 
           // Error 401 - No autenticado
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _deleteErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            print('Error de autenticación al eliminar incidencia: ${e.response?.data}');
+            _deleteErrorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            print(
+              'Error de autenticación al eliminar incidencia: ${e.response?.data}',
+            );
           }
           // Error 404 - No existe
           else if (statusCode == 404) {
@@ -505,17 +568,24 @@ class IncidenciaController extends ChangeNotifier {
           }
           // Error 409/422 - Dependencias activas
           else if (statusCode == 409 || statusCode == 422) {
-            _deleteErrorMessage = 'No es posible eliminar la incidencia por dependencias activas.';
-            print('Error de dependencias al eliminar incidencia: ${e.response?.data}');
+            _deleteErrorMessage =
+                'No es posible eliminar la incidencia por dependencias activas.';
+            print(
+              'Error de dependencias al eliminar incidencia: ${e.response?.data}',
+            );
           }
           // Otro error del servidor (500+)
           else {
-            _deleteErrorMessage = 'Error del servidor: ${e.response?.data ?? statusCode}';
-            print('Error del servidor al eliminar incidencia: ${e.response?.data}');
+            _deleteErrorMessage =
+                'Error del servidor: ${e.response?.data ?? statusCode}';
+            print(
+              'Error del servidor al eliminar incidencia: ${e.response?.data}',
+            );
           }
         } else {
           // Error de conexión
-          _deleteErrorMessage = 'Error de conexión: ${e.message ?? e.toString()}';
+          _deleteErrorMessage =
+              'Error de conexión: ${e.message ?? e.toString()}';
           print('Error de conexión al eliminar incidencia: ${e.message}');
         }
       } else {
@@ -543,7 +613,9 @@ class IncidenciaController extends ChangeNotifier {
       print('📦 Response data: ${response.data}');
 
       if (response.data != null && response.data is Map<String, dynamic>) {
-        final galeriaResponse = GaleriaResponse.fromJson(response.data as Map<String, dynamic>);
+        final galeriaResponse = GaleriaResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
         _galeriaImagenes = galeriaResponse.imagenes;
         print('✅ Galería parseada correctamente');
         print('Total de imágenes: ${_galeriaImagenes.length}');
@@ -568,16 +640,19 @@ class IncidenciaController extends ChangeNotifier {
       if (e is DioException) {
         if (e.response != null) {
           final responseData = e.response?.data;
-          
-          if (responseData is Map<String, dynamic> && 
+
+          if (responseData is Map<String, dynamic> &&
               responseData['detail'] == 'Not authenticated') {
             _isNotAuthenticated = true;
-            _galeriaErrorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            _galeriaErrorMessage =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
           } else {
-            _galeriaErrorMessage = 'Error al cargar galería: ${e.response?.statusCode}';
+            _galeriaErrorMessage =
+                'Error al cargar galería: ${e.response?.statusCode}';
           }
         } else {
-          _galeriaErrorMessage = 'Error de conexión al cargar galería: ${e.message ?? e.toString()}';
+          _galeriaErrorMessage =
+              'Error de conexión al cargar galería: ${e.message ?? e.toString()}';
         }
       } else {
         _galeriaErrorMessage = 'Error al cargar galería: ${e.toString()}';
@@ -598,7 +673,7 @@ class IncidenciaController extends ChangeNotifier {
 
     try {
       await _incidenciaService.uploadFotoGaleria(incidenciaId, filePath);
-      
+
       _isUploadingPhoto = false;
       notifyListeners();
 
@@ -606,7 +681,7 @@ class IncidenciaController extends ChangeNotifier {
 
       // Refrescar galería después de subir
       await fetchGaleria(incidenciaId);
-      
+
       return true;
     } catch (e) {
       _isUploadingPhoto = false;
@@ -616,16 +691,19 @@ class IncidenciaController extends ChangeNotifier {
           final responseData = e.response?.data;
           final statusCode = e.response?.statusCode;
 
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _uploadPhotoError = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            _uploadPhotoError =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
           } else {
-            _uploadPhotoError = 'Error al subir foto: ${e.response?.statusCode}';
+            _uploadPhotoError =
+                'Error al subir foto: ${e.response?.statusCode}';
           }
         } else {
-          _uploadPhotoError = 'Error de conexión al subir foto: ${e.message ?? e.toString()}';
+          _uploadPhotoError =
+              'Error de conexión al subir foto: ${e.message ?? e.toString()}';
         }
       } else {
         _uploadPhotoError = 'Error al subir foto: ${e.toString()}';
@@ -648,30 +726,34 @@ class IncidenciaController extends ChangeNotifier {
 
     try {
       print('🗑️ Iniciando eliminación de foto: $nombreArchivo');
-      
+
       // Hacer la petición DELETE al endpoint
-      final response = await _incidenciaService.deleteFotoGaleria(incidenciaId, nombreArchivo);
-      
+      final response = await _incidenciaService.deleteFotoGaleria(
+        incidenciaId,
+        nombreArchivo,
+      );
+
       // Verificar que la respuesta sea exitosa
       if (response.statusCode == 200 || response.statusCode == 204) {
         print("✅ Foto eliminada correctamente. Status: ${response.statusCode}");
-        
+
         _isDeletingPhoto = false;
         notifyListeners();
 
         // Esperar un momento para que el servidor procese la eliminación
         await Future.delayed(const Duration(milliseconds: 200));
-        
+
         // Refrescar galería después de eliminar exitosamente
         print('🔄 Recargando galería después de eliminar...');
         await fetchGaleria(incidenciaId);
         print('✅ Galería recargada correctamente');
-        
+
         return true;
       } else {
         // Respuesta inesperada
         _isDeletingPhoto = false;
-        _uploadPhotoError = 'Error inesperado al eliminar foto: ${response.statusCode}';
+        _uploadPhotoError =
+            'Error inesperado al eliminar foto: ${response.statusCode}';
         notifyListeners();
         print('⚠️ Respuesta inesperada al eliminar: ${response.statusCode}');
         return false;
@@ -683,22 +765,25 @@ class IncidenciaController extends ChangeNotifier {
         if (e.response != null) {
           final responseData = e.response?.data;
           final statusCode = e.response?.statusCode;
-          
-          if (statusCode == 401 || 
-              (responseData is Map<String, dynamic> && 
-               responseData['detail'] == 'Not authenticated')) {
+
+          if (statusCode == 401 ||
+              (responseData is Map<String, dynamic> &&
+                  responseData['detail'] == 'Not authenticated')) {
             _isNotAuthenticated = true;
-            _uploadPhotoError = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            _uploadPhotoError =
+                'No estás autenticado. Por favor, inicia sesión nuevamente.';
           } else if (statusCode == 404) {
             _uploadPhotoError = 'La foto no existe o ya fue eliminada.';
             // Aún así, intentar recargar la galería por si acaso
             await fetchGaleria(incidenciaId);
           } else {
-            _uploadPhotoError = 'Error al eliminar foto: ${responseData ?? statusCode}';
+            _uploadPhotoError =
+                'Error al eliminar foto: ${responseData ?? statusCode}';
           }
         } else {
           // Error de conexión
-          _uploadPhotoError = 'Error de conexión al eliminar foto: ${e.message ?? e.toString()}';
+          _uploadPhotoError =
+              'Error de conexión al eliminar foto: ${e.message ?? e.toString()}';
         }
       } else {
         _uploadPhotoError = 'Error al eliminar foto: ${e.toString()}';
@@ -709,5 +794,5 @@ class IncidenciaController extends ChangeNotifier {
       return false;
     }
   }
+  
 }
-
