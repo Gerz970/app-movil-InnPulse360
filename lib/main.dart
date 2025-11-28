@@ -16,6 +16,9 @@ import 'features/reservas/controllers/reservas_controller.dart';
 import 'features/transporte/controllers/transporte_controller.dart';
 import 'features/mensajeria/controllers/mensajeria_controller.dart';
 import 'features/mantenimiento/controllers/mantenimiento_controller.dart';
+import 'features/mantenimiento/controllers/mantenimiento_controller.dart';
+import 'features/mensajeria/controllers/mensajeria_controller.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -163,6 +166,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TransporteController()),
         ChangeNotifierProvider(create: (_) => MensajeriaController()),
         ChangeNotifierProvider(create: (_) => MantenimientoController()),
+        ChangeNotifierProvider(create: (_) => MantenimientoController()),
+        ChangeNotifierProvider(create: (_) => MensajeriaController()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
