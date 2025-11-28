@@ -82,6 +82,21 @@ class TransporteService {
     }
   }
 
+  Future<Response> fetchServiciosPorEmpleado(int empleadoId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No hay token de autenticación disponible');
+
+    final url = baseUrl + EndpointsTransporte.porEmpleado(empleadoId);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    try {
+      final response = await _dio.get(url, options: Options(headers: headers));
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Response> createServicioDesdeReservacion(
     Map<String, dynamic> data,
     int reservacionId,
@@ -97,6 +112,54 @@ class TransporteService {
         url,
         data: data,
         queryParameters: {'reservacion_id': reservacionId}, // Enviar como query parameter
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Response> iniciarViaje(int idServicio, String comentario) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No hay token de autenticación disponible');
+
+    final url = baseUrl + EndpointsTransporte.detail(idServicio);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    final data = {
+      'id_estatus': 3, // En Curso
+      'observaciones_empleado': comentario,
+    };
+
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
+        options: Options(headers: headers),
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Response> terminarViaje(int idServicio, String comentario) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No hay token de autenticación disponible');
+
+    final url = baseUrl + EndpointsTransporte.detail(idServicio);
+    final headers = {'Authorization': 'Bearer $token'};
+
+    final data = {
+      'id_estatus': 4, // Terminado
+      'observaciones_empleado': comentario,
+    };
+
+    try {
+      final response = await _dio.put(
+        url,
+        data: data,
         options: Options(headers: headers),
       );
       return response;

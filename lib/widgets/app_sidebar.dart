@@ -369,6 +369,8 @@ class AppSidebar extends StatelessWidget {
       return Icons.build;
     } else if (nombreLower.contains('limpieza')) {
       return Icons.cleaning_services;
+    } else if (nombreLower.contains('transporte') || nombreLower.contains('transportista')) {
+      return Icons.local_taxi;
     } else {
       return Icons.dashboard; // Icono por defecto
     }

@@ -35,6 +35,30 @@ class TransporteController extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchServiciosConductor(int empleadoId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _service.fetchServiciosPorEmpleado(empleadoId);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        _servicios = data.map((json) => ServicioTransporteModel.fromJson(json)).toList();
+      }
+    } catch (e) {
+      _error = e.toString();
+      print('Error fetching servicios conductor: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  List<ServicioTransporteModel> getServiciosPorEstatus(int estatusId) {
+    return _servicios.where((servicio) => servicio.idEstatus == estatusId).toList();
+  }
+
   Future<bool> crearServicio(ServicioTransporteModel servicio) async {
     _isLoading = true;
     _error = null;
@@ -84,6 +108,56 @@ class TransporteController extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> iniciarViaje(int idServicio, String comentario) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _service.iniciarViaje(idServicio, comentario);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      _isLoading = false;
+      _error = 'Error al iniciar viaje';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      print('Error iniciar viaje: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> terminarViaje(int idServicio, String comentario) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _service.terminarViaje(idServicio, comentario);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      _isLoading = false;
+      _error = 'Error al terminar viaje';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      print('Error terminar viaje: $e');
+      notifyListeners();
+      return false;
     }
   }
 }

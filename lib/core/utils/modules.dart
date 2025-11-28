@@ -7,6 +7,7 @@ import '../../features/limpieza/limpieza_administracion_screen.dart';
 import '../../features/limpieza/limpieza_camarista_screen.dart';
 import '../../features/reservas/reservas_main_screen.dart';
 import '../../features/transporte/screens/transporte_main_screen.dart';
+import '../../features/transporte/screens/transportista_screen.dart';
 
 final Map<String, Widget Function()> moduleScreens = {
   // Rutas exactas del backend según MODULOS.md
@@ -18,5 +19,6 @@ final Map<String, Widget Function()> moduleScreens = {
   'limpieza_camarista_screen': () => const LimpiezaCamaristaScreen(),
   // Módulo de transporte
   'transporte_cliente_screen': () => const TransporteMainScreen(),
+  'transportista_screen': () => const TransportistaScreen(),
   'mantenimiento_screen': () => const MantenimientosListScreen()
 };

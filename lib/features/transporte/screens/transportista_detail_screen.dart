@@ -241,8 +241,6 @@ class _TransportistaDetailScreenState extends State<TransportistaDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoRow(Icons.person, 'Cliente/Reserva', '#${_servicio.reservacionId ?? "N/A"}'),
-                    const SizedBox(height: 12),
                     _buildInfoRow(Icons.calendar_today, 'Fecha', _servicio.fechaServicio.toIso8601String().split('T')[0]),
                     const SizedBox(height: 12),
                     _buildInfoRow(Icons.access_time, 'Hora', _servicio.horaServicio),
