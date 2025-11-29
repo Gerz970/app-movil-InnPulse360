@@ -304,6 +304,28 @@ class FCMService {
           // o desde el widget que escuche el callback
         }
         break;
+      case 'transporte_asignado':
+      case 'transporte_iniciado':
+      case 'transporte_terminado':
+        final servicioId = data['servicio_id'] as String?;
+        if (servicioId != null) {
+          if (tipo == 'transporte_asignado') {
+            print('📱 Navegando a transportista_detail con ID: $servicioId (tipo: $tipo)');
+          } else {
+            print('📱 Navegando a transporte_detail con ID: $servicioId (tipo: $tipo)');
+          }
+          // La navegación real se manejará desde el callback configurado
+          // o desde el widget que escuche el callback
+        }
+        break;
+      case 'mantenimiento_asignado':
+        final mantenimientoId = data['mantenimiento_id'] as String?;
+        if (mantenimientoId != null) {
+          print('📱 Navegando a mantenimiento_detail con ID: $mantenimientoId (tipo: $tipo)');
+          // La navegación real se manejará desde el callback configurado
+          // o desde el widget que escuche el callback
+        }
+        break;
       default:
         print('⚠️ Tipo de notificación desconocido: $tipo');
     }

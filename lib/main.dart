@@ -15,8 +15,11 @@ import 'features/limpieza/controllers/limpieza_controller.dart';
 import 'features/limpieza/limpieza_detail_screen.dart';
 import 'features/reservas/controllers/reservas_controller.dart';
 import 'features/transporte/controllers/transporte_controller.dart';
+import 'features/transporte/screens/transportista_detail_screen.dart';
+import 'features/transporte/screens/transporte_detail_screen.dart';
 import 'features/mensajeria/controllers/mensajeria_controller.dart';
 import 'features/mantenimiento/controllers/mantenimiento_controller.dart';
+import 'features/mantenimiento/mantenimiento_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +82,41 @@ void _handleNotificationNavigation(Map<String, dynamic> data) {
         print('⚠️ limpieza_id no encontrado en datos de notificación');
       }
       break;
+    case 'transporte_asignado':
+    case 'transporte_iniciado':
+    case 'transporte_terminado':
+      final servicioIdStr = data['servicio_id'] as String?;
+      if (servicioIdStr != null) {
+        final servicioId = int.tryParse(servicioIdStr);
+        if (servicioId != null) {
+          if (tipo == 'transporte_asignado') {
+            print('📱 Navegando a transportista_detail con ID: $servicioId');
+            _navigateToTransportistaDetail(navigator, servicioId);
+          } else {
+            print('📱 Navegando a transporte_detail con ID: $servicioId');
+            _navigateToTransporteDetail(navigator, servicioId);
+          }
+        } else {
+          print('⚠️ servicio_id no es un número válido: $servicioIdStr');
+        }
+      } else {
+        print('⚠️ servicio_id no encontrado en datos de notificación');
+      }
+      break;
+    case 'mantenimiento_asignado':
+      final mantenimientoIdStr = data['mantenimiento_id'] as String?;
+      if (mantenimientoIdStr != null) {
+        final mantenimientoId = int.tryParse(mantenimientoIdStr);
+        if (mantenimientoId != null) {
+          print('📱 Navegando a mantenimiento_detail con ID: $mantenimientoId');
+          _navigateToMantenimientoDetail(navigator, mantenimientoId);
+        } else {
+          print('⚠️ mantenimiento_id no es un número válido: $mantenimientoIdStr');
+        }
+      } else {
+        print('⚠️ mantenimiento_id no encontrado en datos de notificación');
+      }
+      break;
     default:
       print('⚠️ Tipo de notificación desconocido: $tipo');
   }
@@ -139,6 +177,181 @@ void _navigateToLimpiezaDetail(NavigatorState navigator, int limpiezaId) async {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Error al cargar la limpieza: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+/// Navega a la pantalla de detalle de transportista cargando primero los datos
+void _navigateToTransportistaDetail(NavigatorState navigator, int servicioId) async {
+  try {
+    // Obtener el contexto del navigator
+    final context = navigator.context;
+    
+    // Obtener el TransporteController del Provider
+    final transporteController = Provider.of<TransporteController>(context, listen: false);
+    
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    // Cargar detalle del servicio de transporte
+    final servicio = await transporteController.obtenerDetalleServicio(servicioId);
+    
+    // Cerrar indicador de carga
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    
+    // Verificar que se cargó correctamente
+    if (servicio != null) {
+      // Navegar a la pantalla de detalle del transportista
+      navigator.push(
+        MaterialPageRoute(
+          builder: (context) => TransportistaDetailScreen(servicio: servicio),
+        ),
+      );
+    } else {
+      // Mostrar error si no se pudo cargar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al cargar el servicio de transporte'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    print('❌ Error navegando a detalle de transportista: $e');
+    // Cerrar indicador de carga si está abierto
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    // Mostrar error
+    final context = navigator.context;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al cargar el servicio de transporte: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+/// Navega a la pantalla de detalle de transporte (cliente) cargando primero los datos
+void _navigateToTransporteDetail(NavigatorState navigator, int servicioId) async {
+  try {
+    // Obtener el contexto del navigator
+    final context = navigator.context;
+    
+    // Obtener el TransporteController del Provider
+    final transporteController = Provider.of<TransporteController>(context, listen: false);
+    
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    // Cargar detalle del servicio de transporte
+    final servicio = await transporteController.obtenerDetalleServicio(servicioId);
+    
+    // Cerrar indicador de carga
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    
+    // Verificar que se cargó correctamente
+    if (servicio != null) {
+      // Navegar a la pantalla de detalle de transporte (cliente)
+      navigator.push(
+        MaterialPageRoute(
+          builder: (context) => TransporteDetailScreen(servicio: servicio),
+        ),
+      );
+    } else {
+      // Mostrar error si no se pudo cargar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al cargar el servicio de transporte'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    print('❌ Error navegando a detalle de transporte: $e');
+    // Cerrar indicador de carga si está abierto
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    // Mostrar error
+    final context = navigator.context;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al cargar el servicio de transporte: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+/// Navega a la pantalla de detalle de mantenimiento cargando primero los datos
+void _navigateToMantenimientoDetail(NavigatorState navigator, int mantenimientoId) async {
+  try {
+    // Obtener el contexto del navigator
+    final context = navigator.context;
+    
+    // Obtener el MantenimientoController del Provider
+    final mantenimientoController = Provider.of<MantenimientoController>(context, listen: false);
+    
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    // Cargar lista de mantenimientos para encontrar el específico
+    await mantenimientoController.fetchMantenimientos();
+    
+    // Buscar el mantenimiento específico en la lista
+    final mantenimiento = mantenimientoController.mantenimientos.firstWhere(
+      (m) => m.idMantenimiento == mantenimientoId,
+      orElse: () => throw Exception('Mantenimiento no encontrado'),
+    );
+    
+    // Cerrar indicador de carga
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    
+    // Navegar a la pantalla de detalle de mantenimiento
+    navigator.push(
+      MaterialPageRoute(
+        builder: (context) => MantenimientoDetailScreen(mantenimiento: mantenimiento),
+      ),
+    );
+  } catch (e) {
+    print('❌ Error navegando a detalle de mantenimiento: $e');
+    // Cerrar indicador de carga si está abierto
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    // Mostrar error
+    final context = navigator.context;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al cargar el mantenimiento: $e'),
         backgroundColor: Colors.red,
       ),
     );
